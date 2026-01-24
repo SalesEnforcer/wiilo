@@ -1,0 +1,68 @@
+<div class="min-h-screen flex flex-col items-center justify-center bg-navy-950 px-4">
+  
+  <!-- Logo Header -->
+  <div class="mb-8 text-center">
+    <div class="mx-auto h-12 w-12 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-navy-950 font-bold text-2xl shadow-glow mb-4">
+      W
+    </div>
+    <h1 class="text-3xl font-bold text-white tracking-tight">wiilo.</h1>
+    <p class="text-slate-400 text-sm mt-2">Enterprise Operating System</p>
+  </div>
+
+  <!-- Login Card -->
+  <div class="bg-white w-full max-w-[400px] rounded-2xl shadow-2xl overflow-hidden p-8 border border-white/10">
+    <div class="mb-6">
+      <h2 class="text-xl font-bold text-navy-950">Welcome Back</h2>
+      <p class="text-sm text-slate-500">Please enter your credentials to access the terminal.</p>
+    </div>
+
+    <form (submit)="onSubmit()" class="space-y-5">
+      
+      <!-- Email -->
+      <div class="space-y-1">
+        <label class="text-xs font-semibold text-navy-900 uppercase tracking-wide">Work Email</label>
+        <input 
+          [(ngModel)]="email" 
+          name="email"
+          type="email" 
+          class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-navy-900 focus:bg-white transition-all outline-none"
+          placeholder="admin@agency.com"
+          required
+        >
+      </div>
+
+      <!-- Password -->
+      <div class="space-y-1">
+        <label class="text-xs font-semibold text-navy-900 uppercase tracking-wide">Password</label>
+        <input 
+          [(ngModel)]="password" 
+          name="password"
+          type="password" 
+          class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-navy-900 focus:bg-white transition-all outline-none"
+          placeholder="????????"
+          required
+        >
+      </div>
+
+      <!-- Action -->
+      <button 
+        type="submit" 
+        class="w-full bg-navy-900 text-white font-bold py-3.5 rounded-lg hover:bg-navy-800 transition-all duration-200 shadow-lg mt-2 flex justify-center items-center gap-2">
+        <span>Authenticate</span>
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+      </button>
+
+      <!-- Footer -->
+      <div class="text-center pt-4 border-t border-slate-100">
+        <p class="text-sm text-slate-500">
+          New Agency? <a routerLink="/register" class="text-gold-600 font-bold hover:underline cursor-pointer">Initialize System</a>
+        </p>
+      </div>
+    </form>
+  </div>
+
+  <!-- Footer Info -->
+  <div class="mt-8 text-center text-xs text-slate-600">
+    &copy; 2026 Wiilo Inc. Secure Environment.
+  </div>
+</div>

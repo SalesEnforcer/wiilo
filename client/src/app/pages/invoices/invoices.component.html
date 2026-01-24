@@ -1,0 +1,110 @@
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex justify-between items-center">
+    <h1 class="text-2xl font-bold text-slate-800">Financials</h1>
+    <button (click)="showModal = true" class="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium text-sm shadow-sm shadow-blue-200">
+      + Create Invoice
+    </button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <div class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Total Revenue</div>
+      <div class="text-3xl font-bold text-slate-800">${{ totalRevenue() | number:'1.2-2' }}</div>
+    </div>
+    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+      <div class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Pending</div>
+      <div class="text-3xl font-bold text-amber-500">${{ pendingRevenue() | number:'1.2-2' }}</div>
+    </div>
+  </div>
+
+  <!-- Invoices Table -->
+  <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <table class="w-full text-left border-collapse">
+      <thead class="bg-slate-50 border-b border-slate-200">
+        <tr>
+          <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Invoice / Project</th>
+          <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+          <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
+          <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+          <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        @for (inv of invoiceService.invoices(); track inv._id) {
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-6 py-4">
+              <div class="font-medium text-slate-900">{{ inv.title }}</div>
+              <div class="text-xs text-slate-500">{{ inv.project?.name || 'General' }}</div>
+            </td>
+            <td class="px-6 py-4 text-sm text-slate-600">
+              {{ inv.createdAt | date:'mediumDate' }}
+            </td>
+            <td class="px-6 py-4 font-bold text-slate-800">
+              ${{ inv.amount | number }}
+            </td>
+            <td class="px-6 py-4">
+              @if(inv.status === 'paid') {
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Paid
+                </span>
+              } @else {
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                  Pending
+                </span>
+              }
+            </td>
+            <td class="px-6 py-4 text-right">
+              @if(inv.status !== 'paid') {
+                <button (click)="markPaid(inv._id)" class="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline">
+                  Mark Paid
+                </button>
+              }
+            </td>
+          </tr>
+        } @empty {
+           <tr>
+             <td colspan="5" class="px-6 py-12 text-center text-slate-500 italic">No invoices found.</td>
+           </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Simple Invoice Modal -->
+@if (showModal) {
+<div class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50">
+  <div class="bg-white p-8 rounded-xl w-full max-w-md shadow-2xl">
+    <h2 class="text-xl font-bold mb-6 text-slate-800">New Invoice</h2>
+    
+    <form (submit)="onSubmit()">
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>
+        <input [(ngModel)]="newInvoice.title" name="title" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm" placeholder="e.g. Deposit for Project X" required>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Amount ($)</label>
+        <input [(ngModel)]="newInvoice.amount" name="amount" type="number" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm" required>
+      </div>
+      
+      <!-- Quick hack: Dropdown for projects -->
+      <div class="mb-6">
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Project Link</label>
+        <select [(ngModel)]="newInvoice.project" name="project" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm" required>
+           @for (p of projects(); track p._id) {
+             <option [value]="p._id">{{ p.name }}</option>
+           }
+        </select>
+      </div>
+
+      <div class="flex justify-end gap-3">
+        <button type="button" (click)="showModal = false" class="px-4 py-2 text-slate-500 hover:text-slate-700 font-medium text-sm">Cancel</button>
+        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm">Issue Invoice</button>
+      </div>
+    </form>
+  </div>
+</div>
+}

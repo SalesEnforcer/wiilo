@@ -1,0 +1,77 @@
+<div class="flex justify-between items-center mb-6">
+  <h1 class="text-2xl font-bold text-slate-800">Projects</h1>
+  
+  <!-- ADMIN ONLY BUTTON -->
+  <!-- FIX: Use authService directly -->
+  @if (authService.isAdmin()) {
+    <button (click)="showModal = true" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm shadow-sm">
+      + New Project
+    </button>
+  }
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  @for (project of projectService.projects(); track project._id) {
+    <!-- FIX: Use authService directly for role check -->
+    <div [routerLink]="['/' + (authService.getRole() === 'client' ? 'portal' : 'projects'), project._id]" 
+         class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition cursor-pointer group relative overflow-hidden">
+      
+      <div class="flex justify-between items-start mb-4">
+        <h3 class="font-bold text-lg text-slate-800 group-hover:text-blue-600 transition">{{ project.name }}</h3>
+        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700 font-medium capitalize">{{ project.status }}</span>
+      </div>
+      
+      <div class="flex items-center gap-2 mb-4 text-xs text-slate-500">
+        <span class="font-medium text-slate-700">Client:</span> {{ project.client?.name || 'Unassigned' }}
+      </div>
+
+      <div class="border-t border-slate-100 pt-4 flex justify-between items-center text-sm">
+        <span class="text-slate-500">Budget</span>
+        <span class="font-bold text-slate-800">${{ project.budget | number }}</span>
+      </div>
+    </div>
+  } @empty {
+    <div class="col-span-full py-12 text-center text-slate-500">No projects visible.</div>
+  }
+</div>
+
+<!-- Modal Logic -->
+@if (showModal) {
+<div class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50">
+  <div class="bg-white p-8 rounded-lg w-full max-w-md shadow-2xl">
+    <h2 class="text-xl font-bold mb-6 text-slate-800">Create New Project</h2>
+    <form (submit)="onSubmit()">
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Project Name</label>
+        <input [(ngModel)]="newProject.name" name="name" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm" required>
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Budget ($)</label>
+        <input [(ngModel)]="newProject.budget" name="budget" type="number" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm" required>
+      </div>
+      <div class="mb-4">
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Assign Client</label>
+        <select [(ngModel)]="newProject.client" name="client" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm" required>
+          <option value="" disabled>Select a Client</option>
+          @for (c of clients; track c._id) {
+            <option [value]="c._id">{{ c.name }} ({{ c.email }})</option>
+          }
+        </select>
+      </div>
+      <div class="mb-6">
+        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Assign Lead Developer</label>
+        <select [(ngModel)]="newProject.devs" name="devs" class="w-full border border-slate-300 p-2.5 rounded-lg text-sm">
+           <option value="" disabled>Select a Developer</option>
+           @for (d of devs; track d._id) {
+             <option [value]="d._id">{{ d.name }}</option>
+           }
+        </select>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button type="button" (click)="showModal = false" class="px-4 py-2 text-slate-500 hover:text-slate-700 font-medium text-sm">Cancel</button>
+        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm">Create Project</button>
+      </div>
+    </form>
+  </div>
+</div>
+}

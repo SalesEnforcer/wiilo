@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* GLOBAL RESETS */
+html, body { 
+  height: 100%; 
+  font-family: 'Inter', system-ui, sans-serif; 
+}
+
+/* KANBAN DRAG & DROP OVERRIDES */
+
+/* The element being dragged (The Ghost) */
+.cdk-drag-preview {
+  @apply bg-white p-4 rounded-lg shadow-2xl border border-blue-500 cursor-grabbing;
+  box-sizing: border-box;
+}
+
+/* The empty space where it will drop */
+.cdk-drag-placeholder {
+  @apply opacity-30 bg-slate-200 border-2 border-dashed border-slate-400 rounded-lg;
+}
+
+/* The animation of the list re-shuffling */
+.cdk-drop-list-dragging .cdk-drag {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Animate elements moving out of the way */
+.cdk-drag-animating {
+  transition: transform 300ms cubic-bezier(0, 0, 0.2, 1);
+}

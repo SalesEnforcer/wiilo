@@ -1,8 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
 
 @Component({
   selector: 'app-login',
@@ -14,25 +15,29 @@ export class LoginComponent {
   email = '';
   password = '';
   
+  // This is the missing signal causing the error
+  isLoading = signal(false);
+
   authService = inject(AuthService);
+  toastService = inject(ToastService);
   router = inject(Router);
 
   onSubmit() {
-    console.log('?? Submitting Login...');
-    const credentials = { email: this.email, password: this.password };
+    if (this.isLoading()) return;
     
+    this.isLoading.set(true);
+    const credentials = { email: this.email, password: this.password };
+
     this.authService.login(credentials).subscribe({
       next: (res) => {
-        console.log('? API Success:', res);
-        console.log('?? Checking Storage:', localStorage.getItem('token'));
-        
-        this.router.navigate(['/dashboard']).then(success => {
-            console.log('Navigation result:', success ? 'Moved to Dashboard' : 'Navigation Failed');
-        });
+        this.toastService.show('Welcome back!', 'success');
+        this.router.navigate(['/dashboard']);
+        this.isLoading.set(false);
       },
       error: (err) => {
-        console.error('? Login Failed:', err);
-        alert('Login Failed: ' + (err.error?.error || 'Unknown error'));
+        console.error('Login Failed:', err);
+        this.toastService.show(err.error?.error || 'Invalid credentials', 'error');
+        this.isLoading.set(false);
       }
     });
   }

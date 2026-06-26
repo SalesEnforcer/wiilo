@@ -1,27 +1,93 @@
-const Project = require('../models/Project');
+﻿const { supabaseAdmin } = require('../config/supabase');
+
+// Robust UUID sanitizer to prevent Postgres syntax crashes
+const cleanUuid = (val) => {
+  if (!val || val === 'undefined' || val === 'null' || val.trim() === '') {
+    return null;
+  }
+  return val;
+};
+
+// Helper to transform Postgres project row to Mongo-compatible format
+const formatProject = (project, devMap = {}) => {
+  return {
+    id: project.id,
+    _id: project.id, // For backwards compatibility
+    name: project.name,
+    description: project.description,
+    status: project.status,
+    budget: Number(project.budget),
+    organization: project.organization_id,
+    client: project.client ? {
+      id: project.client.id,
+      _id: project.client.id,
+      name: project.client.name,
+      email: project.client.email
+    } : null,
+    devs: (project.devs || []).map(id => {
+      const dev = devMap[id];
+      return dev ? {
+        id: dev.id,
+        _id: dev.id,
+        name: dev.name,
+        email: dev.email
+      } : { id, _id: id };
+    }),
+    createdAt: project.created_at
+  };
+};
 
 // @desc    Get Projects (SECURE FILTERING)
 // @route   GET /api/projects
 exports.getProjects = async (req, res) => {
   try {
-    let query = { organization: req.user.organization };
+    const orgId = cleanUuid(req.user.organization);
+    if (!orgId) {
+      return res.status(200).json({ success: true, count: 0, data: [] });
+    }
+
+    let query = supabaseAdmin
+      .from('projects')
+      .select('*, client:client_id(id, name, email)')
+      .eq('organization_id', orgId);
 
     // SECURITY CHECK:
     // If not Admin, restrict query to assigned projects only
     if (req.user.role === 'client') {
-      query.client = req.user.id;
+      query = query.eq('client_id', req.user.id);
     } else if (req.user.role === 'dev') {
-      query.devs = req.user.id;
+      query = query.contains('devs', [req.user.id]);
     }
-    // Superadmin sees all (default query)
 
-    const projects = await Project.find(query)
-      .populate('client', 'name email')
-      .populate('devs', 'name email');
-    
-    res.status(200).json({ success: true, count: projects.length, data: projects });
+    const { data: projects, error } = await query;
+    if (error) throw error;
+
+    let formattedProjects = [];
+    if (projects && projects.length > 0) {
+      const devIds = [...new Set(projects.flatMap(p => p.devs || []))].filter(id => cleanUuid(id) !== null);
+      const devMap = {};
+      
+      if (devIds.length > 0) {
+        const { data: devUsers, error: devsError } = await supabaseAdmin
+          .from('users')
+          .select('id, name, email')
+          .in('id', devIds);
+        
+        if (devsError) throw devsError;
+        
+        if (devUsers) {
+          devUsers.forEach(u => {
+            devMap[u.id] = u;
+          });
+        }
+      }
+      
+      formattedProjects = projects.map(p => formatProject(p, devMap));
+    }
+
+    res.status(200).json({ success: true, count: formattedProjects.length, data: formattedProjects });
   } catch (err) {
-    console.error(err);
+    console.error('getProjects error:', err.message);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
@@ -30,12 +96,53 @@ exports.getProjects = async (req, res) => {
 // @route   POST /api/projects
 exports.createProject = async (req, res) => {
   try {
-    req.body.organization = req.user.organization;
-    const project = await Project.create(req.body);
+    const { name, description, status, budget, client, devs } = req.body;
+    
+    // Sanitize UUIDs to prevent Postgres column mismatches
+    const sanitizedClientId = cleanUuid(client);
+    const sanitizedOrgId = cleanUuid(req.user.organization);
+    const sanitizedDevs = (devs || [])
+      .map(id => cleanUuid(id))
+      .filter(id => id !== null);
 
-    res.status(201).json({ success: true, data: project });
+    const insertData = {
+      name,
+      description,
+      status: status || 'active',
+      budget: budget ? Number(budget) : 0,
+      organization_id: sanitizedOrgId,
+      client_id: sanitizedClientId,
+      devs: sanitizedDevs
+    };
+
+    const { data: project, error } = await supabaseAdmin
+      .from('projects')
+      .insert(insertData)
+      .select('*, client:client_id(id, name, email)')
+      .single();
+
+    if (error) throw error;
+
+    const devMap = {};
+    if (project.devs && project.devs.length > 0) {
+      const { data: devUsers, error: devsError } = await supabaseAdmin
+        .from('users')
+        .select('id, name, email')
+        .in('id', project.devs);
+      
+      if (devsError) throw devsError;
+      
+      if (devUsers) {
+        devUsers.forEach(u => {
+          devMap[u.id] = u;
+        });
+      }
+    }
+
+    const formattedProject = formatProject(project, devMap);
+    res.status(201).json({ success: true, data: formattedProject });
   } catch (err) {
-    console.error(err);
+    console.error('createProject error:', err.message);
     res.status(400).json({ success: false, error: err.message });
   }
 };

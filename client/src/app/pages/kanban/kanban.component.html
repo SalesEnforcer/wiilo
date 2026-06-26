@@ -1,37 +1,40 @@
 <div class="h-full flex flex-col">
   <!-- Header & Controls -->
-  <div class="flex justify-between items-center mb-6 border-b border-slate-200 pb-4">
-    <div class="flex items-center gap-4">
-      <h2 class="text-2xl font-bold text-slate-800">Workspace</h2>
-      
-      <!-- MAIN TABS -->
-      <div class="flex bg-slate-100 p-1 rounded-lg">
-        <button (click)="activeTab = 'board'" [class.bg-white]="activeTab === 'board'" [class.shadow-sm]="activeTab === 'board'" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all text-slate-600">Board</button>
-        <button (click)="activeTab = 'list'" [class.bg-white]="activeTab === 'list'" [class.shadow-sm]="activeTab === 'list'" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all text-slate-600 flex items-center gap-2">List</button>
-        <button (click)="activeTab = 'chat'" [class.bg-white]="activeTab === 'chat'" [class.shadow-sm]="activeTab === 'chat'" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all text-slate-600">Discussion</button>
-        <button (click)="activeTab = 'resources'" [class.bg-white]="activeTab === 'resources'" [class.shadow-sm]="activeTab === 'resources'" class="px-4 py-1.5 rounded-md text-sm font-medium transition-all text-slate-600">Resources</button>
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 pb-4 border-b border-outline-variant/50">
+    <div class="flex items-center gap-3 flex-wrap">
+      <h2 class="font-headline-md text-headline-md text-on-surface">Workspace</h2>
+
+      <!-- Tabs -->
+      <div class="flex bg-surface-container p-1 rounded-xl">
+        <button (click)="activeTab = 'board'" [class.bg-surface-container-lowest]="activeTab === 'board'" [class.shadow-sm]="activeTab === 'board'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-on-surface-variant">Board</button>
+        <button (click)="activeTab = 'list'" [class.bg-surface-container-lowest]="activeTab === 'list'" [class.shadow-sm]="activeTab === 'list'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-on-surface-variant">List</button>
+        <button (click)="activeTab = 'chat'" [class.bg-surface-container-lowest]="activeTab === 'chat'" [class.shadow-sm]="activeTab === 'chat'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-on-surface-variant">Discussion</button>
+        <button (click)="activeTab = 'resources'" [class.bg-surface-container-lowest]="activeTab === 'resources'" [class.shadow-sm]="activeTab === 'resources'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-on-surface-variant">Resources</button>
       </div>
     </div>
-    <button *ngIf="activeTab === 'board' || activeTab === 'list'" (click)="showAddModal = true" class="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition text-sm font-medium">+ Add Task</button>
+    <button *ngIf="activeTab === 'board' || activeTab === 'list'" (click)="showAddModal = true" class="bg-primary text-on-primary px-4 py-2 rounded-xl hover:bg-on-primary-fixed-variant transition-colors text-sm font-semibold inline-flex items-center gap-1.5">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+      Add Task
+    </button>
   </div>
 
   <!-- VIEW 1: KANBAN BOARD -->
-  <div *ngIf="activeTab === 'board'" class="flex gap-6 h-full overflow-x-auto pb-4" cdkDropListGroup>
+  <div *ngIf="activeTab === 'board'" class="flex gap-4 h-full overflow-x-auto pb-4" cdkDropListGroup>
     @for (col of columns; track col.id) {
-      <div class="w-80 flex-shrink-0 flex flex-col bg-slate-100 rounded-xl p-4 border border-slate-200">
-        <h3 class="font-bold text-slate-600 mb-4 flex justify-between uppercase text-[11px] tracking-wider">{{ col.title }} <span class="bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full">{{ getTasksByStatus(col.id).length }}</span></h3>
-        <div cdkDropList [cdkDropListData]="getTasksByStatus(col.id)" class="flex-1 flex flex-col gap-3 min-h-[100px]" (cdkDropListDropped)="drop($event, col.id)">
+      <div class="w-72 flex-shrink-0 flex flex-col bg-surface-container rounded-2xl p-4 border border-outline-variant/50">
+        <h3 class="font-semibold text-on-surface-variant mb-3 flex justify-between uppercase text-[10px] tracking-wider">{{ col.title }} <span class="bg-surface-container-lowest text-on-surface-variant px-2 py-0.5 rounded-full text-[10px] font-bold">{{ getTasksByStatus(col.id).length }}</span></h3>
+        <div cdkDropList [cdkDropListData]="getTasksByStatus(col.id)" class="flex-1 flex flex-col gap-2.5 min-h-[100px]" (cdkDropListDropped)="drop($event, col.id)">
           @for (task of getTasksByStatus(col.id); track task._id) {
-            <div (click)="openTask(task)" cdkDrag class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition group relative" [class.border-l-4]="task.isBlocked" [class.border-l-red-500]="task.isBlocked" [class.bg-red-50]="task.isBlocked">
+            <div (click)="openTask(task)" cdkDrag class="bg-surface-container-lowest p-3.5 rounded-xl border border-outline-variant cursor-pointer hover:shadow-sm hover:border-primary/30 transition group relative" [class.border-l-4]="task.isBlocked" [class.border-l-red-500]="task.isBlocked" [class.bg-red-50]="task.isBlocked">
               <div *cdkDragPlaceholder class="opacity-0"></div>
               <div class="flex justify-between items-start">
-                <div class="text-sm font-semibold text-slate-800">{{ task.title }}</div>
-                @if(task.isBlocked) { <span class="text-xs">?</span> }
+                <div class="text-sm font-semibold text-on-surface">{{ task.title }}</div>
+                @if(task.isBlocked) { <span class="text-xs">??</span> }
               </div>
               <div class="mt-2 flex items-center gap-2">
-                 <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100">{{ task.milestone || 'Backlog' }}</span>
+                 <span class="text-[10px] font-medium bg-primary-container/10 text-primary px-2 py-0.5 rounded-lg">{{ task.milestone || 'Backlog' }}</span>
               </div>
-              <div class="text-[10px] text-slate-400 mt-2 flex justify-between items-center">
+              <div class="text-[10px] text-on-surface-variant mt-2 flex justify-between items-center">
                  <span>#{{ task._id.slice(-4) }}</span>
                  <div class="flex gap-2">
                    @if(task.comments?.length) { <span class="flex items-center gap-1">?? {{ task.comments.length }}</span> }
@@ -45,147 +48,164 @@
     }
   </div>
 
-  <!-- VIEW 2: LIST VIEW (Enterprise Table) -->
-  <div *ngIf="activeTab === 'list'" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+  <!-- VIEW 2: LIST VIEW -->
+  <div *ngIf="activeTab === 'list'" class="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden">
     <table class="w-full text-left">
-      <thead class="bg-slate-50 border-b border-slate-200">
+      <thead class="border-b border-outline-variant/50">
         <tr>
-          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Status</th>
-          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Task Name</th>
-          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Milestone</th>
-          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase">Assignee</th>
-          <th class="px-6 py-3 text-xs font-bold text-slate-500 uppercase text-right">Actions</th>
+          <th class="px-5 py-3 text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Status</th>
+          <th class="px-5 py-3 text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Task Name</th>
+          <th class="px-5 py-3 text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Milestone</th>
+          <th class="px-5 py-3 text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider">Assignee</th>
+          <th class="px-5 py-3 text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody>
         @for (task of kanbanService.tasks(); track task._id) {
-          <tr (click)="openTask(task)" class="hover:bg-slate-50 transition cursor-pointer">
-            <td class="px-6 py-3">
-              <span class="uppercase text-[10px] font-bold px-2 py-1 rounded-full" [class.bg-green-100]="task.status==='done'" [class.text-green-800]="task.status==='done'" [class.bg-slate-100]="task.status!=='done'">{{ task.status }}</span>
+          <tr (click)="openTask(task)" class="hover:bg-surface-container transition-colors cursor-pointer border-b border-outline-variant/30 last:border-b-0">
+            <td class="px-5 py-3">
+              <span class="uppercase text-[10px] font-bold px-2 py-0.5 rounded-full" [class.bg-green-50]="task.status==='done'" [class.text-green-700]="task.status==='done'" [class.bg-surface-container]="task.status!=='done'" [class.text-on-surface-variant]="task.status!=='done'">{{ task.status }}</span>
             </td>
-            <td class="px-6 py-3 font-medium text-slate-800">
-              <span *ngIf="task.isBlocked" class="mr-2">?</span> {{ task.title }}
+            <td class="px-5 py-3 font-medium text-on-surface text-sm">
+              <span *ngIf="task.isBlocked" class="mr-1">??</span> {{ task.title }}
             </td>
-            <td class="px-6 py-3 text-sm text-slate-600">{{ task.milestone || 'Backlog' }}</td>
-            <td class="px-6 py-3 text-sm text-slate-500">Unassigned</td>
-            <td class="px-6 py-3 text-right text-xs text-blue-600 hover:underline">Edit</td>
+            <td class="px-5 py-3 text-sm text-on-surface-variant">{{ task.milestone || 'Backlog' }}</td>
+            <td class="px-5 py-3 text-sm text-on-surface-variant">Unassigned</td>
+            <td class="px-5 py-3 text-right text-xs text-primary font-medium hover:underline">Edit</td>
           </tr>
         }
       </tbody>
     </table>
   </div>
 
-  <!-- OTHER TABS (Chat/Resources) -->
-  <div *ngIf="activeTab === 'chat'" class="flex-1 flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-    <!-- (Existing Chat Code...) We keep this succinct for this file update -->
-    <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
+  <!-- VIEW 3: CHAT -->
+  <div *ngIf="activeTab === 'chat'" class="flex-1 flex flex-col bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden">
+    <div class="flex-1 overflow-y-auto p-5 space-y-4 bg-surface-container/50">
       @for (msg of chatService.messages(); track msg._id) {
         <div class="flex gap-3" [class.flex-row-reverse]="isMe(msg.sender._id)">
-          <div class="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shadow-sm" [class.bg-blue-600]="!isMe(msg.sender._id)" [class.text-white]="!isMe(msg.sender._id)" [class.bg-slate-300]="isMe(msg.sender._id)" [class.text-slate-700]="isMe(msg.sender._id)">{{ msg.sender.name.charAt(0).toUpperCase() }}</div>
+          <div class="h-8 w-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0" [class.bg-primary]="!isMe(msg.sender._id)" [class.text-on-primary]="!isMe(msg.sender._id)" [class.bg-surface-container-high]="isMe(msg.sender._id)" [class.text-on-surface]="isMe(msg.sender._id)">{{ msg.sender.name.charAt(0).toUpperCase() }}</div>
           <div class="max-w-[70%]">
-            <div class="px-4 py-2 rounded-2xl text-sm shadow-sm" [class.bg-white]="!isMe(msg.sender._id)" [class.text-slate-800]="!isMe(msg.sender._id)" [class.bg-blue-600]="isMe(msg.sender._id)" [class.text-white]="isMe(msg.sender._id)">{{ msg.content }}</div>
+            <div class="px-4 py-2 rounded-2xl text-sm" [class.bg-surface-container-lowest]="!isMe(msg.sender._id)" [class.text-on-surface]="!isMe(msg.sender._id)" [class.bg-primary]="isMe(msg.sender._id)" [class.text-on-primary]="isMe(msg.sender._id)">{{ msg.content }}</div>
           </div>
         </div>
       }
     </div>
-    <div class="p-4 bg-white border-t border-slate-200">
-      <form (submit)="sendMessage()" class="flex gap-2"><input [(ngModel)]="newMessage" name="message" class="flex-1 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Type a message..."><button type="submit" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium text-sm hover:bg-blue-700 transition">Send</button></form>
+    <div class="p-4 bg-surface-container-lowest border-t border-outline-variant/50">
+      <form (submit)="sendMessage()" class="flex gap-2">
+        <input [(ngModel)]="newMessage" name="message" class="flex-1 border border-outline-variant rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-surface-container-lowest text-on-surface placeholder:text-outline" placeholder="Type a message...">
+        <button type="submit" class="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-on-primary-fixed-variant transition-colors">Send</button>
+      </form>
     </div>
   </div>
 
-  <div *ngIf="activeTab === 'resources'" class="flex-1 p-6 bg-white border border-slate-200 rounded-xl shadow-sm overflow-y-auto">
-    <div class="flex justify-between items-center mb-6"><h3 class="text-lg font-bold text-slate-800">Project Deliverables</h3><form (submit)="addResource()" class="flex gap-2"><input [(ngModel)]="newResource.title" name="rtitle" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm w-40" placeholder="Title" required><input [(ngModel)]="newResource.url" name="rurl" class="border border-slate-200 rounded-lg px-3 py-1.5 text-sm w-60" placeholder="URL" required><button type="submit" class="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-blue-700">Add</button></form></div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <!-- VIEW 4: RESOURCES -->
+  <div *ngIf="activeTab === 'resources'" class="flex-1 p-5 bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-y-auto">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+      <h3 class="font-headline-md text-headline-md text-on-surface">Project Deliverables</h3>
+      <form (submit)="addResource()" class="flex gap-2 flex-wrap">
+        <input [(ngModel)]="newResource.title" name="rtitle" class="border border-outline-variant rounded-xl px-3 py-2 text-sm bg-surface-container-lowest text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none w-36" placeholder="Title" required>
+        <input [(ngModel)]="newResource.url" name="rurl" class="border border-outline-variant rounded-xl px-3 py-2 text-sm bg-surface-container-lowest text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none w-48" placeholder="URL" required>
+        <button type="submit" class="bg-primary text-on-primary px-4 py-2 rounded-xl text-sm font-semibold hover:bg-on-primary-fixed-variant transition-colors">Add</button>
+      </form>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       @for (res of resourceService.resources(); track res._id) {
-        <a [href]="res.url" target="_blank" class="p-4 rounded-xl border border-slate-200 hover:border-blue-400 hover:shadow-md transition bg-slate-50 flex items-center gap-4 group">
-          <div class="h-10 w-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-500 group-hover:text-blue-600"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg></div>
-          <div><div class="font-bold text-slate-800 text-sm">{{ res.title }}</div><div class="text-xs text-slate-500 truncate max-w-[150px]">{{ res.url }}</div></div>
+        <a [href]="res.url" target="_blank" class="p-4 rounded-2xl border border-outline-variant hover:border-primary/40 hover:shadow-sm transition bg-surface-container flex items-center gap-3 group">
+          <div class="h-10 w-10 rounded-xl bg-surface-container-lowest border border-outline-variant flex items-center justify-center text-on-surface-variant group-hover:text-primary shrink-0">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+          </div>
+          <div class="min-w-0">
+            <div class="font-bold text-on-surface text-sm truncate">{{ res.title }}</div>
+            <div class="text-xs text-on-surface-variant truncate">{{ res.url }}</div>
+          </div>
         </a>
       }
     </div>
   </div>
 </div>
 
-<!-- CREATE MODAL -->
+<!-- CREATE TASK MODAL -->
 @if (showAddModal) {
-<div class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50">
-  <div class="bg-white p-6 rounded-lg w-96 shadow-2xl">
-    <h3 class="font-bold text-lg mb-4 text-slate-800">New Task</h3>
-    <input [(ngModel)]="newTaskTitle" class="w-full border p-2 rounded mb-4 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Task title...">
-    <input [(ngModel)]="newTaskMilestone" class="w-full border p-2 rounded mb-4 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Milestone (e.g. Sprint 1)">
-    <div class="flex justify-end gap-2">
-      <button (click)="showAddModal = false" class="text-slate-500 hover:text-slate-700 font-medium text-sm">Cancel</button>
-      <button (click)="addTask()" class="bg-slate-900 text-white px-4 py-2 rounded text-sm font-medium hover:bg-slate-800">Create</button>
+<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-sm shadow-xl border border-outline-variant overflow-hidden">
+    <div class="px-5 py-4 border-b border-outline-variant/50">
+      <h3 class="font-headline-md text-headline-md text-on-surface">New Task</h3>
+    </div>
+    <div class="p-5 space-y-3">
+      <input [(ngModel)]="newTaskTitle" class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Task title...">
+      <input [(ngModel)]="newTaskMilestone" class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none" placeholder="Milestone (e.g. Sprint 1)">
+      <div class="flex justify-end gap-2 pt-2">
+        <button (click)="showAddModal = false" class="px-4 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors rounded-xl">Cancel</button>
+        <button (click)="addTask()" class="px-5 py-2.5 bg-primary text-on-primary rounded-xl text-sm font-semibold hover:bg-on-primary-fixed-variant transition-colors">Create</button>
+      </div>
     </div>
   </div>
 </div>
 }
 
-<!-- TASK DETAILS MODAL (MEGA MODAL) -->
+<!-- TASK DETAILS MODAL -->
 @if (showEditModal && selectedTask) {
-<div class="fixed inset-0 bg-slate-900/50 flex items-center justify-center z-50 backdrop-blur-sm">
-  <div class="bg-white rounded-xl w-full max-w-2xl shadow-2xl relative flex flex-col max-h-[90vh]">
-    
-    <!-- Modal Header -->
-    <div class="p-6 border-b border-slate-100 flex justify-between items-start bg-slate-50 rounded-t-xl">
+<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-2xl shadow-xl border border-outline-variant flex flex-col max-h-[90vh] overflow-hidden">
+
+    <!-- Header -->
+    <div class="p-5 border-b border-outline-variant/50 flex justify-between items-start bg-surface-container/50">
       <div class="flex-1 mr-4">
-        <input [(ngModel)]="selectedTask.title" class="w-full bg-transparent text-xl font-bold text-slate-800 border-none focus:ring-0 p-0 placeholder:text-slate-400" placeholder="Task Title">
+        <input [(ngModel)]="selectedTask.title" class="w-full bg-transparent font-headline-md text-headline-md text-on-surface border-none focus:ring-0 p-0 placeholder:text-outline outline-none" placeholder="Task Title">
         <div class="flex items-center gap-2 mt-2">
-          <input [(ngModel)]="selectedTask.milestone" class="text-xs bg-white border border-slate-200 rounded px-2 py-1" placeholder="Milestone">
+          <input [(ngModel)]="selectedTask.milestone" class="text-xs bg-surface-container-lowest border border-outline-variant rounded-lg px-2 py-1 text-on-surface focus:border-primary outline-none" placeholder="Milestone">
           <div class="flex items-center gap-2 cursor-pointer" (click)="selectedTask.isBlocked = !selectedTask.isBlocked">
-             <div class="w-4 h-4 rounded border flex items-center justify-center" [class.bg-red-500]="selectedTask.isBlocked" [class.border-red-500]="selectedTask.isBlocked" [class.border-slate-300]="!selectedTask.isBlocked">
+             <div class="w-4 h-4 rounded border flex items-center justify-center transition-colors" [class.bg-red-500]="selectedTask.isBlocked" [class.border-red-500]="selectedTask.isBlocked" [class.border-outline-variant]="!selectedTask.isBlocked">
                <svg *ngIf="selectedTask.isBlocked" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
              </div>
-             <span class="text-xs font-medium" [class.text-red-600]="selectedTask.isBlocked" [class.text-slate-500]="!selectedTask.isBlocked">Blocked</span>
+             <span class="text-xs font-semibold" [class.text-red-600]="selectedTask.isBlocked" [class.text-on-surface-variant]="!selectedTask.isBlocked">Blocked</span>
           </div>
         </div>
       </div>
-      <button (click)="showEditModal = false" class="text-slate-400 hover:text-slate-600"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+      <button (click)="showEditModal = false" class="text-on-surface-variant hover:text-on-surface transition-colors p-1"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
     </div>
 
-    <!-- Modal Body (Grid) -->
+    <!-- Body -->
     <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
-      
-      <!-- LEFT: Details & Notes -->
-      <div class="flex-1 p-6 overflow-y-auto border-r border-slate-100">
-        
-        <!-- Only Dev/Admin can see Notes -->
+
+      <!-- Left: Notes -->
+      <div class="flex-1 p-5 overflow-y-auto border-r border-outline-variant/30">
         @if (authService.getRole() !== 'client') {
-          <div class="mb-6">
-            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Internal Notes</label>
-            <textarea [(ngModel)]="selectedTask.description" rows="8" class="w-full border border-slate-200 p-3 rounded-lg text-sm focus:border-blue-500 outline-none bg-slate-50 focus:bg-white transition" placeholder="Add technical details..."></textarea>
+          <div class="mb-5">
+            <label class="block text-[10px] font-semibold text-on-surface-variant uppercase tracking-wider mb-2">Internal Notes</label>
+            <textarea [(ngModel)]="selectedTask.description" rows="8" class="w-full border border-outline-variant rounded-xl p-3 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-surface-container/50 text-on-surface placeholder:text-outline transition" placeholder="Add technical details..."></textarea>
           </div>
         } @else {
-          <div class="p-4 bg-slate-50 rounded-lg text-sm text-slate-500 italic">Internal details are hidden from client view.</div>
+          <div class="p-4 bg-surface-container rounded-xl text-sm text-on-surface-variant">Internal details are hidden from client view.</div>
         }
 
         <div class="flex justify-end">
-           <button (click)="saveTask()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm">Save Changes</button>
+           <button (click)="saveTask()" class="px-5 py-2.5 bg-primary text-on-primary rounded-xl hover:bg-on-primary-fixed-variant font-semibold text-sm transition-colors">Save Changes</button>
         </div>
       </div>
 
-      <!-- RIGHT: Comments (Threaded) -->
-      <div class="w-full md:w-80 bg-slate-50 flex flex-col">
-        <div class="p-4 border-b border-slate-200 font-bold text-xs text-slate-500 uppercase">Comments</div>
-        
+      <!-- Right: Comments -->
+      <div class="w-full md:w-80 bg-surface-container/30 flex flex-col">
+        <div class="p-4 border-b border-outline-variant/30 font-semibold text-[10px] text-on-surface-variant uppercase tracking-wider">Comments</div>
+
         <div class="flex-1 overflow-y-auto p-4 space-y-3">
           @for (comment of selectedTask.comments; track $index) {
-            <div class="bg-white p-3 rounded-lg shadow-sm border border-slate-200">
+            <div class="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/50">
               <div class="flex justify-between items-center mb-1">
-                <span class="text-xs font-bold text-slate-700">{{ comment.user?.name || 'User' }}</span>
-                <span class="text-[10px] text-slate-400">{{ comment.createdAt | date:'short' }}</span>
+                <span class="text-xs font-bold text-on-surface">{{ comment.user?.name || 'User' }}</span>
+                <span class="text-[10px] text-on-surface-variant">{{ comment.createdAt | date:'short' }}</span>
               </div>
-              <p class="text-sm text-slate-600">{{ comment.text }}</p>
+              <p class="text-sm text-on-surface-variant">{{ comment.text }}</p>
             </div>
           } @empty {
-            <div class="text-center text-slate-400 text-xs mt-10">No comments yet.</div>
+            <div class="text-center text-on-surface-variant text-xs mt-8">No comments yet.</div>
           }
         </div>
 
-        <div class="p-3 border-t border-slate-200">
+        <div class="p-3 border-t border-outline-variant/30 bg-surface-container-lowest">
           <div class="flex gap-2">
-            <input [(ngModel)]="newTaskComment" class="flex-1 border border-slate-300 rounded p-2 text-sm outline-none" placeholder="Reply...">
-            <button (click)="addComment()" class="bg-white border border-slate-300 hover:bg-slate-100 px-3 rounded text-slate-600">?</button>
+            <input [(ngModel)]="newTaskComment" class="flex-1 border border-outline-variant rounded-xl px-3 py-2 text-sm outline-none bg-surface-container-lowest text-on-surface placeholder:text-outline focus:border-primary transition" placeholder="Reply...">
+            <button (click)="addComment()" class="bg-surface-container border border-outline-variant hover:bg-surface-container-high px-3 rounded-xl text-on-surface-variant transition-colors font-semibold text-sm">Send</button>
           </div>
         </div>
       </div>

@@ -1,0 +1,129 @@
+<div class="h-full flex flex-col">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 pb-4 border-b border-outline-variant/50">
+    <div>
+      <h2 class="font-headline-md text-headline-md text-on-surface">{{ project()?.name || 'Project' }}</h2>
+      <p class="text-sm text-on-surface-variant mt-0.5">Project overview and updates</p>
+    </div>
+    <div class="flex bg-surface-container p-1 rounded-xl">
+      <button (click)="activeTab = 'roadmap'" [class.bg-surface-container-lowest]="activeTab === 'roadmap'" [class.shadow-sm]="activeTab === 'roadmap'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-on-surface-variant">Roadmap</button>
+      <button (click)="activeTab = 'chat'" [class.bg-surface-container-lowest]="activeTab === 'chat'" [class.shadow-sm]="activeTab === 'chat'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-on-surface-variant">Messages</button>
+      <button (click)="activeTab = 'resources'" [class.bg-surface-container-lowest]="activeTab === 'resources'" [class.shadow-sm]="activeTab === 'resources'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-on-surface-variant">Files</button>
+      <button (click)="activeTab = 'invoices'" [class.bg-surface-container-lowest]="activeTab === 'invoices'" [class.shadow-sm]="activeTab === 'invoices'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-on-surface-variant">Invoices</button>
+    </div>
+  </div>
+
+  <!-- ROADMAP TAB -->
+  @if (activeTab === 'roadmap') {
+    <div class="flex-1 overflow-y-auto space-y-3">
+      @for (task of tasks(); track task._id) {
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-4" [class.border-l-4]="task.isBlocked" [class.border-l-red-500]="task.isBlocked">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="w-2.5 h-2.5 rounded-full shrink-0"
+                [class.bg-green-500]="task.status === 'done'"
+                [class.bg-blue-500]="task.status === 'in-progress'"
+                [class.bg-purple-500]="task.status === 'review'"
+                [class.bg-slate-400]="task.status === 'todo'"></span>
+              <span class="font-semibold text-on-surface text-sm">{{ task.title }}</span>
+            </div>
+            <span class="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full"
+              [class.bg-green-50]="task.status === 'done'" [class.text-green-700]="task.status === 'done'"
+              [class.bg-blue-50]="task.status === 'in-progress'" [class.text-blue-700]="task.status === 'in-progress'"
+              [class.bg-purple-50]="task.status === 'review'" [class.text-purple-700]="task.status === 'review'"
+              [class.bg-surface-container]="task.status === 'todo'" [class.text-on-surface-variant]="task.status === 'todo'">
+              {{ task.status }}
+            </span>
+          </div>
+          @if (task.milestone) {
+            <div class="mt-2 ml-5">
+              <span class="text-[10px] font-medium bg-primary-container/10 text-primary px-2 py-0.5 rounded-lg">{{ task.milestone }}</span>
+            </div>
+          }
+        </div>
+      } @empty {
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant border-dashed p-12 text-center text-on-surface-variant text-sm">
+          No tasks yet. The team will update this soon.
+        </div>
+      }
+    </div>
+  }
+
+  <!-- CHAT TAB -->
+  @if (activeTab === 'chat') {
+    <div class="flex-1 flex flex-col bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden">
+      <div class="flex-1 overflow-y-auto p-5 space-y-4 bg-surface-container/50">
+        @for (msg of messages(); track msg._id) {
+          <div class="flex gap-3" [class.flex-row-reverse]="isMe(msg.sender._id)">
+            <div class="h-8 w-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0" [class.bg-primary]="!isMe(msg.sender._id)" [class.text-on-primary]="!isMe(msg.sender._id)" [class.bg-surface-container-high]="isMe(msg.sender._id)" [class.text-on-surface]="isMe(msg.sender._id)">{{ msg.sender.name.charAt(0).toUpperCase() }}</div>
+            <div class="max-w-[70%]">
+              <div class="px-4 py-2 rounded-2xl text-sm" [class.bg-surface-container-lowest]="!isMe(msg.sender._id)" [class.text-on-surface]="!isMe(msg.sender._id)" [class.bg-primary]="isMe(msg.sender._id)" [class.text-on-primary]="isMe(msg.sender._id)">{{ msg.content }}</div>
+            </div>
+          </div>
+        }
+      </div>
+      <div class="p-4 bg-surface-container-lowest border-t border-outline-variant/50">
+        <form (submit)="sendMessage()" class="flex gap-2">
+          <input [(ngModel)]="newMessage" name="message" class="flex-1 border border-outline-variant rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-surface-container-lowest text-on-surface placeholder:text-outline" placeholder="Type a message...">
+          <button type="submit" class="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-on-primary-fixed-variant transition-colors">Send</button>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- RESOURCES TAB -->
+  @if (activeTab === 'resources') {
+    <div class="flex-1 overflow-y-auto">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        @for (res of resources(); track res._id) {
+          <a [href]="res.url" target="_blank" class="p-4 rounded-2xl border border-outline-variant hover:border-primary/40 hover:shadow-sm transition bg-surface-container-lowest flex items-center gap-3 group">
+            <div class="h-10 w-10 rounded-xl bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:text-primary shrink-0">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+            </div>
+            <div class="min-w-0">
+              <div class="font-bold text-on-surface text-sm truncate">{{ res.title }}</div>
+              <div class="text-xs text-on-surface-variant truncate">{{ res.url }}</div>
+            </div>
+          </a>
+        } @empty {
+          <div class="col-span-full bg-surface-container-lowest rounded-2xl border border-outline-variant border-dashed p-12 text-center text-on-surface-variant text-sm">
+            No files shared yet.
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- INVOICES TAB -->
+  @if (activeTab === 'invoices') {
+    <div class="flex-1 overflow-y-auto space-y-4">
+      <!-- Paid Summary -->
+      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-5 flex items-center justify-between">
+        <div>
+          <div class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Total Paid</div>
+          <div class="text-[28px] font-bold text-on-surface leading-none mt-1">${{ paidAmount() | number:'1.2-2' }}</div>
+        </div>
+        <div class="h-12 w-12 rounded-2xl bg-green-50 flex items-center justify-center text-green-600">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
+      </div>
+
+      @for (inv of projectInvoices(); track inv._id) {
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-4 flex justify-between items-center">
+          <div>
+            <div class="font-semibold text-on-surface text-sm">{{ inv.title }}</div>
+            <div class="text-xs text-on-surface-variant mt-0.5">{{ inv.createdAt | date:'mediumDate' }}</div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold text-on-surface">${{ inv.amount | number }}</div>
+            <span class="text-[10px] font-semibold uppercase" [class.text-green-600]="inv.status === 'paid'" [class.text-amber-600]="inv.status !== 'paid'">{{ inv.status }}</span>
+          </div>
+        </div>
+      } @empty {
+        <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant border-dashed p-12 text-center text-on-surface-variant text-sm">
+          No invoices for this project yet.
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -2,10 +2,10 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const helmet = require('helmet');
-const connectDB = require('./src/config/db');
+const { testConnection } = require('./src/config/supabase');
 
 dotenv.config();
-connectDB();
+testConnection();
 
 const app = express();
 

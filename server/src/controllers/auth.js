@@ -1,83 +1,47 @@
-const ErrorResponse = require('../utils/errorResponse'); // We will make this next
-const User = require('../models/User');
-const Organization = require('../models/Organization');
+﻿const { supabase, supabaseAdmin } = require('../config/supabase');
 
-// @desc    Register user & Create Organization
-// @route   POST /api/auth/register
-// @access  Public
-exports.register = async (req, res, next) => {
+exports.register = async (req, res) => {
   try {
     const { name, email, password, orgName } = req.body;
 
-    // 1. Create the Organization first
-    const organization = await Organization.create({
-      name: orgName
+    // 1. Create Org using Admin client (Bypasses RLS)
+    const { data: organization, error: orgError } = await supabaseAdmin
+      .from('organizations').insert({ name: orgName }).select().single();
+    if (orgError) throw orgError;
+
+    // 2. Sign up using Standard client (Anon Key required for Auth)
+    const { data, error } = await supabase.auth.signUp({
+      email, password,
+      options: { data: { name, role: 'superadmin', organization_id: organization.id } }
     });
 
-    // 2. Create the User (Superadmin) linked to that Org
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role: 'superadmin',
-      organization: organization._id
-    });
+    if (error) {
+      await supabaseAdmin.from('organizations').delete().eq('id', organization.id);
+      throw error;
+    }
 
-    sendTokenResponse(user, 200, res);
-  } catch (err) {
-    // If user creation fails, we might want to rollback org creation, 
-    // but for MVP let's just log the error.
-    console.error(err);
-    res.status(400).json({ success: false, error: err.message });
-  }
+    if (!data.session) return res.status(201).json({ success: true, message: 'Registered. Check email.' });
+
+    res.status(200).json({
+      success: true, token: data.session.access_token,
+      user: { id: data.user.id, name, email, role: 'superadmin', org: organization.id }
+    });
+  } catch (err) { res.status(400).json({ success: false, error: err.message }); }
 };
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
-exports.login = async (req, res, next) => {
+exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ success: false, error: 'Email and password required' });
 
-    // Validate email & password
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: 'Please provide an email and password' });
-    }
+    // Use Standard client for login
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return res.status(401).json({ success: false, error: 'Invalid credentials' });
 
-    // Check for user
-    const user = await User.findOne({ email }).select('+password');
+    // Fetch profile using Admin client
+    const { data: profile } = await supabaseAdmin.from('users')
+      .select('id, name, email, role, organization_id').eq('id', data.user.id).single();
 
-    if (!user) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
-
-    // Check if password matches
-    const isMatch = await user.matchPassword(password);
-
-    if (!isMatch) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
-    }
-
-    sendTokenResponse(user, 200, res);
-  } catch (err) {
-     res.status(400).json({ success: false, error: err.message });
-  }
-};
-
-// Get token from model, create cookie and send response
-const sendTokenResponse = (user, statusCode, res) => {
-  // Create token
-  const token = user.getSignedJwtToken();
-
-  res.status(statusCode).json({
-    success: true,
-    token,
-    user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        org: user.organization
-    }
-  });
+    res.status(200).json({ success: true, token: data.session.access_token, user: profile });
+  } catch (err) { res.status(400).json({ success: false, error: err.message }); }
 };

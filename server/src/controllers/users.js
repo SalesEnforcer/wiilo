@@ -1,62 +1,42 @@
-const User = require('../models/User');
+﻿const { supabaseAdmin } = require('../config/supabase');
 
-// @desc    Get all users (Existing)
 exports.getTeam = async (req, res) => {
   try {
-    const users = await User.find({ organization: req.user.organization })
-                            .select('-password')
-                            .sort({ createdAt: -1 });
+    const { data: users, error } = await supabaseAdmin.from('users')
+      .select('id, name, email, role, created_at').eq('organization_id', req.user.organization).order('created_at', { ascending: false });
+    if (error) throw error;
     res.status(200).json({ success: true, count: users.length, data: users });
-  } catch (err) {
-    res.status(500).json({ success: false, error: 'Server Error' });
-  }
+  } catch (err) { res.status(500).json({ success: false, error: err.message }); }
 };
 
-// @desc    Add Member (Existing)
 exports.addMember = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-    const user = await User.create({
-      name, email, password, role,
-      organization: req.user.organization
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email, password, email_confirm: true,
+      user_metadata: { name, role, organization_id: req.user.organization }
     });
-    res.status(201).json({ success: true, data: user });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
-  }
+    if (authError) throw authError;
+
+    const { data: profile, error: profileError } = await supabaseAdmin.from('users').select('*').eq('id', authData.user.id).single();
+    if (profileError) throw profileError;
+    res.status(201).json({ success: true, data: profile });
+  } catch (err) { res.status(400).json({ success: false, error: err.message }); }
 };
 
-// @desc    Update My Profile
-// @route   PUT /api/users/profile
 exports.updateProfile = async (req, res) => {
   try {
-    const fieldsToUpdate = {
-      name: req.body.name,
-      email: req.body.email
-    };
+    const fieldsToUpdate = {};
+    if (req.body.name) fieldsToUpdate.name = req.body.name;
+    if (req.body.email) fieldsToUpdate.email = req.body.email;
 
-    // If password is sent, we need to handle it separately to trigger hashing
     if (req.body.password) {
-      const user = await User.findById(req.user.id);
-      user.password = req.body.password;
-      user.name = req.body.name || user.name;
-      user.email = req.body.email || user.email;
-      await user.save(); // Triggers the pre-save hook for bcrypt
-      
-      // Return without password
-      const updatedUser = user.toObject();
-      delete updatedUser.password;
-      return res.status(200).json({ success: true, data: updatedUser });
+      const { error: pwdError } = await supabaseAdmin.auth.admin.updateUserById(req.user.id, { password: req.body.password });
+      if (pwdError) throw pwdError;
     }
 
-    // Standard update
-    const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
-      new: true,
-      runValidators: true
-    }).select('-password');
-
+    const { data: user, error } = await supabaseAdmin.from('users').update(fieldsToUpdate).eq('id', req.user.id).select().single();
+    if (error) throw error;
     res.status(200).json({ success: true, data: user });
-  } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
-  }
+  } catch (err) { res.status(400).json({ success: false, error: err.message }); }
 };

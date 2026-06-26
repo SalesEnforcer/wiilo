@@ -1,57 +1,150 @@
-<div class="min-h-screen flex flex-col items-center justify-center bg-[#f8fafc] px-4 py-10">
-  
-  <!-- Logo Header -->
-  <div class="mb-8 text-center">
-    <div class="mx-auto h-12 w-12 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-2xl shadow-lg shadow-blue-200 mb-4">
-      W
+<div class="min-h-screen flex flex-col md:flex-row bg-surface-container-lowest md:overflow-hidden">
+  <!-- Brand Panel -->
+  <div class="hidden md:flex md:w-1/2 bg-primary relative flex-col p-margin-desktop justify-between overflow-hidden">
+    <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.8) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.4) 0%, transparent 50%); mix-blend-mode: overlay;"></div>
+    
+    <!-- Logo -->
+    <div class="z-10 flex items-center gap-2 text-on-primary">
+      <svg class="h-8 w-8" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="10" fill="white" fill-opacity="0.2"/>
+        <path d="M11 14h5l2 12H13l-2-12z" fill="white" opacity="0.5"/>
+        <path d="M16 14h5l-3 12h-5l3-12z" fill="white" opacity="0.75"/>
+        <path d="M21 14h5l-4 12h-5l4-12z" fill="white"/>
+        <path d="M26 14h3l-5 12h-3l5-12z" fill="white" opacity="0.6"/>
+        <circle cx="28.5" cy="11.5" r="2" fill="#F59E0B"/>
+      </svg>
+      <span class="font-headline-md text-headline-md tracking-tight">wiilo</span>
     </div>
-    <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Initialize Agency</h1>
-    <p class="text-slate-500 text-sm mt-2">Create your secure workspace.</p>
+    
+    <!-- Marketing Copy -->
+    <div class="z-10 max-w-lg mt-auto mb-32">
+      <div class="font-label-sm text-label-sm text-primary-fixed-dim uppercase tracking-widest mb-6 flex items-center gap-4">
+        <div class="h-px bg-primary-fixed-dim w-8"></div>
+        Get Started
+      </div>
+      <h1 class="font-display-lg text-display-lg text-on-primary mb-6 leading-tight">
+        Build your <span class="font-bold">agency</span> hub
+      </h1>
+      <p class="font-body-lg text-body-lg text-primary-fixed-dim leading-relaxed">
+        One workspace for your team, projects, invoices, and client portals. Everything in its right place.
+      </p>
+      <div class="mt-12 flex items-center gap-4">
+        <div class="h-px bg-primary-fixed-dim/30 w-12"></div>
+        <span class="font-label-sm text-label-sm text-primary-fixed-dim uppercase tracking-wider">Free to Start</span>
+      </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="z-10 flex justify-between items-center text-primary-fixed-dim font-label-sm text-label-sm">
+      <span>&copy; 2026 Wiilo Inc.</span>
+      <div class="flex gap-4">
+        <a class="hover:text-on-primary transition-colors" href="#">Privacy</a>
+        <a class="hover:text-on-primary transition-colors" href="#">Terms</a>
+      </div>
+    </div>
   </div>
 
-  <!-- Register Card -->
-  <div class="bg-white w-full max-w-[450px] rounded-2xl shadow-sm border border-slate-200 p-8">
-    
-    <form (submit)="onSubmit()" class="space-y-4">
-      
-      <!-- Agency Name -->
-      <div class="space-y-1">
-        <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Agency Name</label>
-        <input [(ngModel)]="orgName" name="orgName" type="text" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Acme Digital" required>
+  <!-- Form Panel -->
+  <div class="w-full md:w-1/2 flex flex-col md:justify-center items-center px-4 py-5 md:p-margin-desktop bg-surface-container-lowest">
+    <!-- Mobile Logo -->
+    <div class="md:hidden flex items-center justify-center gap-2 text-primary mb-6">
+      <svg class="h-6 w-6" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="40" height="40" rx="10" fill="#004ac6"/>
+        <path d="M11 14h5l2 12H13l-2-12z" fill="white" opacity="0.5"/>
+        <path d="M16 14h5l-3 12h-5l3-12z" fill="white" opacity="0.75"/>
+        <path d="M21 14h5l-4 12h-5l4-12z" fill="white"/>
+        <path d="M26 14h3l-5 12h-3l5-12z" fill="white" opacity="0.6"/>
+        <circle cx="28.5" cy="11.5" r="2" fill="#F59E0B"/>
+      </svg>
+      <span class="font-headline-md text-headline-md">wiilo</span>
+    </div>
+
+    <div class="w-full max-w-sm">
+      <div class="mb-6">
+        <h2 class="text-xl font-bold text-on-surface mb-0.5 tracking-tight">Create your agency</h2>
+        <p class="text-sm text-on-surface-variant">Start your free workspace</p>
       </div>
 
-      <!-- Full Name -->
-      <div class="space-y-1">
-        <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Admin Name</label>
-        <input [(ngModel)]="name" name="name" type="text" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="John Doe" required>
+      <form (submit)="onSubmit()" class="space-y-3">
+        <!-- Agency Name -->
+        <div>
+          <label class="block text-[10px] font-semibold text-on-surface-variant mb-1 uppercase tracking-wider" for="orgName">Agency Name</label>
+          <input
+            [(ngModel)]="orgName"
+            name="orgName"
+            id="orgName"
+            type="text"
+            class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-[13px] text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+            placeholder="e.g. Acme Digital"
+            required
+          >
+        </div>
+
+        <!-- Your Name -->
+        <div>
+          <label class="block text-[10px] font-semibold text-on-surface-variant mb-1 uppercase tracking-wider" for="name">Your Name</label>
+          <input
+            [(ngModel)]="name"
+            name="name"
+            id="name"
+            type="text"
+            class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-[13px] text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+            placeholder="John Doe"
+            required
+          >
+        </div>
+
+        <!-- Work Email -->
+        <div>
+          <label class="block text-[10px] font-semibold text-on-surface-variant mb-1 uppercase tracking-wider" for="email">Work Email</label>
+          <input
+            [(ngModel)]="email"
+            name="email"
+            id="email"
+            type="email"
+            class="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-[13px] text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+            placeholder="you@agency.com"
+            required
+          >
+        </div>
+
+        <!-- Password -->
+        <div>
+          <label class="block text-[10px] font-semibold text-on-surface-variant mb-1 uppercase tracking-wider" for="password">Password</label>
+          <input
+            [(ngModel)]="password"
+            name="password"
+            id="password"
+            type="password"
+            class="w-full bg-surface-container border border-outline-variant rounded-lg px-3 py-2 text-[13px] text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+            placeholder="Min. 8 characters"
+            required
+          >
+        </div>
+
+        <!-- Submit -->
+        <button
+          type="submit"
+          class="w-full bg-primary hover:bg-on-primary-fixed-variant text-on-primary font-label-sm text-label-sm uppercase tracking-wider py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors shadow-sm mt-6">
+          <span>Create Workspace</span>
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+        </button>
+      </form>
+
+      <div class="mt-5 relative flex py-4 items-center">
+        <div class="flex-grow border-t border-outline-variant"></div>
+        <span class="flex-shrink-0 mx-4 text-outline font-label-sm text-label-sm uppercase tracking-wider">Or</span>
+        <div class="flex-grow border-t border-outline-variant"></div>
       </div>
 
-      <!-- Email -->
-      <div class="space-y-1">
-        <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Work Email</label>
-        <input [(ngModel)]="email" name="email" type="email" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="admin@agency.com" required>
-      </div>
-
-      <!-- Password -->
-      <div class="space-y-1">
-        <label class="text-xs font-bold text-slate-500 uppercase tracking-wide">Password</label>
-        <input [(ngModel)]="password" name="password" type="password" class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="????????" required>
-      </div>
-
-      <!-- Action -->
-      <button 
-        type="submit" 
-        class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-sm shadow-blue-200 mt-4 flex justify-center items-center gap-2">
-        <span>Deploy Workspace</span>
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-      </button>
-
-      <!-- Footer -->
-      <div class="text-center pt-4 border-t border-slate-100 mt-2">
-        <p class="text-sm text-slate-500">
-          Already live? <a routerLink="/login" class="text-blue-600 font-bold hover:underline cursor-pointer">Login</a>
-        </p>
-      </div>
-    </form>
+      <p class="text-center text-[13px] text-on-surface-variant mt-3">
+        Already have an account? <a routerLink="/login" class="text-primary font-bold hover:underline transition-all cursor-pointer">Sign in</a>
+      </p>
+    </div>
   </div>
 </div>
+
+
+
+
+

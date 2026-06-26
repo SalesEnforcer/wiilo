@@ -1,54 +1,65 @@
 <!-- Role Based Switcher -->
 @if (authService.getRole() === 'superadmin') {
-  
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
-    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-      <div class="flex justify-between items-start mb-4">
-        <div class="text-slate-500 font-bold text-xs uppercase tracking-wide">Total Revenue</div>
-        <div class="p-2 bg-slate-50 rounded-lg text-slate-900"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+
+  <!-- Stats Row -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-5 hover:shadow-sm transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Total Revenue</span>
+        <div class="h-8 w-8 rounded-xl bg-primary-container/20 flex items-center justify-center text-primary">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        </div>
       </div>
-      <div class="text-4xl font-bold text-slate-900 mb-2">${{ totalRevenue() | number:'1.2-2' }}</div>
-      <div class="flex items-center text-sm text-green-600 bg-green-50 w-fit px-2 py-1 rounded-md"><span>+12.5% vs last month</span></div>
-    </div>
-    
-    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-      <div class="flex justify-between items-start mb-4">
-        <div class="text-slate-500 font-bold text-xs uppercase tracking-wide">Active Projects</div>
-        <div class="p-2 bg-slate-50 rounded-lg text-slate-900"><svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg></div>
-      </div>
-      <div class="text-4xl font-bold text-slate-900 mb-2">{{ activeProjectsCount() }}</div>
-      <div class="text-sm text-slate-400">Currently in development</div>
+      <div class="text-[28px] font-bold text-on-surface leading-none mb-1">${{ totalRevenue() | number:'1.2-2' }}</div>
+      <div class="inline-flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">+12.5% vs last month</div>
     </div>
 
-    <!-- REPLACED PENDING INVOICES WITH RECENT MESSAGES -->
+    <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-5 hover:shadow-sm transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Active Projects</span>
+        <div class="h-8 w-8 rounded-xl bg-primary-container/20 flex items-center justify-center text-primary">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+        </div>
+      </div>
+      <div class="text-[28px] font-bold text-on-surface leading-none mb-1">{{ activeProjectsCount() }}</div>
+      <span class="text-xs text-on-surface-variant">Currently in development</span>
+    </div>
+
     <app-recent-messages class="h-full"></app-recent-messages>
   </div>
 
-  <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
-    <div class="flex items-center justify-between mb-6">
-      <h3 class="text-xl font-bold text-slate-900">Recent Projects</h3>
-      <button class="text-sm text-blue-600 font-medium hover:underline">View All</button>
+  <!-- Projects Table -->
+  <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-outline-variant/50">
+      <h3 class="font-headline-md text-headline-md text-on-surface">Recent Projects</h3>
+      <button class="text-sm font-medium text-primary hover:text-on-primary-fixed-variant transition-colors">View All</button>
     </div>
     @if (activeProjectsCount() > 0) {
-      <div class="overflow-hidden rounded-lg border border-slate-200">
-        <table class="min-w-full divide-y divide-slate-200">
-          <thead class="bg-slate-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Project Name</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Budget</th>
-              <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Status</th>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-outline-variant/50">
+              <th class="px-5 py-3 text-left text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Project Name</th>
+              <th class="px-5 py-3 text-left text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Budget</th>
+              <th class="px-5 py-3 text-left text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Status</th>
             </tr>
           </thead>
-          <tbody class="bg-white divide-y divide-slate-200">
+          <tbody>
             @for (project of projectService.projects().slice(0, 5); track project._id) {
-              <tr class="hover:bg-slate-50 transition">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{{ project.name }}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">${{ project.budget | number }}</td>
-                <td class="px-6 py-4 whitespace-nowrap"><span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">{{ project.status }}</span></td>
+              <tr class="border-b border-outline-variant/30 hover:bg-surface-container transition-colors">
+                <td class="px-5 py-3.5 text-sm font-medium text-on-surface">{{ project.name }}</td>
+                <td class="px-5 py-3.5 text-sm text-on-surface-variant">${{ project.budget | number }}</td>
+                <td class="px-5 py-3.5">
+                  <span class="inline-flex px-2.5 py-1 text-xs font-semibold rounded-full bg-green-50 text-green-700">{{ project.status }}</span>
+                </td>
               </tr>
             }
           </tbody>
         </table>
+      </div>
+    } @else {
+      <div class="p-12 text-center text-on-surface-variant">
+        <p>No projects yet</p>
       </div>
     }
   </div>

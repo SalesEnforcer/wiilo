@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+﻿import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
@@ -43,6 +43,20 @@ export class ProjectService {
         if (res.success) {
           // Add new project to the signal list immediately (Optimistic UI)
           this.projects.update(values => [res.data, ...values]);
+        }
+      })
+    );
+  }
+
+  // Update Project (Assign, unassign, resign, edit details)
+  updateProject(id: string, data: any) {
+    return this.http.put<any>(`${this.apiUrl}/${id}`, data, this.getHeaders()).pipe(
+      tap((res: any) => {
+        if (res.success) {
+          // Swap updated project inside our reactive state signal
+          this.projects.update(values =>
+            values.map(p => (p.id === id || p._id === id) ? res.data : p)
+          );
         }
       })
     );

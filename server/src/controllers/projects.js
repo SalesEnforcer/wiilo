@@ -12,7 +12,7 @@ const cleanUuid = (val) => {
 const formatProject = (project, devMap = {}) => {
   return {
     id: project.id,
-    _id: project.id, // For backwards compatibility
+    _id: project.id, // For absolute backwards compatibility
     name: project.name,
     description: project.description,
     status: project.status,
@@ -98,16 +98,24 @@ exports.createProject = async (req, res) => {
   try {
     const { name, description, status, budget, client, devs } = req.body;
     
+    // Convert devs to array if it is passed as a single string from the frontend select dropdown
+    let devsArray = [];
+    if (Array.isArray(devs)) {
+      devsArray = devs;
+    } else if (typeof devs === 'string' && devs.trim() !== '' && devs !== 'undefined') {
+      devsArray = [devs];
+    }
+
     // Sanitize UUIDs to prevent Postgres column mismatches
     const sanitizedClientId = cleanUuid(client);
     const sanitizedOrgId = cleanUuid(req.user.organization);
-    const sanitizedDevs = (devs || [])
+    const sanitizedDevs = devsArray
       .map(id => cleanUuid(id))
       .filter(id => id !== null);
 
     const insertData = {
       name,
-      description,
+      description: description || 'New Project',
       status: status || 'active',
       budget: budget ? Number(budget) : 0,
       organization_id: sanitizedOrgId,
@@ -143,6 +151,72 @@ exports.createProject = async (req, res) => {
     res.status(201).json({ success: true, data: formattedProject });
   } catch (err) {
     console.error('createProject error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Update project (for assignment, unassignment, resignation, description etc)
+// @route   PUT /api/projects/:id
+exports.updateProject = async (req, res) => {
+  try {
+    const projectId = cleanUuid(req.params.id);
+    if (!projectId) {
+      return res.status(400).json({ success: false, error: 'Invalid project ID' });
+    }
+
+    const updateData = {};
+    if (req.body.name !== undefined) updateData.name = req.body.name;
+    if (req.body.description !== undefined) updateData.description = req.body.description;
+    if (req.body.status !== undefined) updateData.status = req.body.status;
+    if (req.body.budget !== undefined) updateData.budget = Number(req.body.budget);
+    
+    // Support clearing clients by passing "" or null
+    if (req.body.client !== undefined) {
+      updateData.client_id = cleanUuid(req.body.client);
+    }
+    
+    if (req.body.devs !== undefined) {
+      let devsArray = [];
+      if (Array.isArray(req.body.devs)) {
+        devsArray = req.body.devs;
+      } else if (typeof req.body.devs === 'string' && req.body.devs.trim() !== '' && req.body.devs !== 'undefined') {
+        devsArray = [req.body.devs];
+      }
+
+      updateData.devs = devsArray
+        .map(id => cleanUuid(id))
+        .filter(id => id !== null);
+    }
+
+    const { data: project, error } = await supabaseAdmin
+      .from('projects')
+      .update(updateData)
+      .eq('id', projectId)
+      .select('*, client:client_id(id, name, email)')
+      .single();
+
+    if (error) throw error;
+
+    const devMap = {};
+    if (project.devs && project.devs.length > 0) {
+      const { data: devUsers, error: devsError } = await supabaseAdmin
+        .from('users')
+        .select('id, name, email')
+        .in('id', project.devs);
+      
+      if (devsError) throw devsError;
+      
+      if (devUsers) {
+        devUsers.forEach(u => {
+          devMap[u.id] = u;
+        });
+      }
+    }
+
+    const formattedProject = formatProject(project, devMap);
+    res.status(200).json({ success: true, data: formattedProject });
+  } catch (err) {
+    console.error('updateProject error:', err.message);
     res.status(400).json({ success: false, error: err.message });
   }
 };

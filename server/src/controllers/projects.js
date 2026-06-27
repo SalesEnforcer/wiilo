@@ -98,7 +98,7 @@ exports.createProject = async (req, res) => {
   try {
     const { name, description, status, budget, client, devs } = req.body;
     
-    // Convert devs to array if it is passed as a single string from the frontend select dropdown
+    // Convert devs to array if it is passed as a single string from frontend select
     let devsArray = [];
     if (Array.isArray(devs)) {
       devsArray = devs;
@@ -217,6 +217,30 @@ exports.updateProject = async (req, res) => {
     res.status(200).json({ success: true, data: formattedProject });
   } catch (err) {
     console.error('updateProject error:', err.message);
+    res.status(400).json({ success: false, error: err.message });
+  }
+};
+
+// @desc    Delete project
+// @route   DELETE /api/projects/:id
+exports.deleteProject = async (req, res) => {
+  try {
+    const projectId = cleanUuid(req.params.id);
+    if (!projectId) {
+      return res.status(400).json({ success: false, error: 'Invalid project ID' });
+    }
+
+    // Cascade deletion of dependent rows is handled by Supabase Postgres foreign key references with CASCADE.
+    const { error } = await supabaseAdmin
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
+
+    if (error) throw error;
+
+    res.status(200).json({ success: true, data: {} });
+  } catch (err) {
+    console.error('deleteProject error:', err.message);
     res.status(400).json({ success: false, error: err.message });
   }
 };

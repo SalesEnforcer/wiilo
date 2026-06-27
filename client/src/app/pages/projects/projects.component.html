@@ -88,6 +88,14 @@
 
             <!-- Admin Actions -->
             @if (authService.isAdmin()) {
+              <button (click)="startEdit(project, $event)"
+                      class="px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold transition-colors">
+                Edit Details
+              </button>
+              <button (click)="confirmDelete(project, $event)"
+                      class="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors">
+                Delete Project
+              </button>
               @if (project.client || (project.devs && project.devs.length > 0)) {
                 <button (click)="unassignAll(project)"
                         class="px-3 py-2 bg-surface-container-high text-on-surface hover:bg-outline-variant/30 rounded-lg text-xs font-semibold transition-colors border border-outline-variant">
@@ -106,7 +114,7 @@
   }
 </div>
 
-<!-- Modal -->
+<!-- Create Modal -->
 @if (showModal) {
 <div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
   <div class="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-xl border border-outline-variant overflow-hidden">
@@ -147,6 +155,53 @@
       <div class="flex justify-end gap-3 pt-2">
         <button type="button" (click)="showModal = false" class="px-4 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors rounded-xl">Cancel</button>
         <button type="submit" class="px-6 py-2.5 bg-primary text-on-primary rounded-xl hover:bg-on-primary-fixed-variant transition-colors font-semibold text-sm">Create Project</button>
+      </div>
+    </form>
+  </div>
+</div>
+}
+
+<!-- Edit Modal -->
+@if (showEditModal) {
+<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-xl border border-outline-variant overflow-hidden">
+    <div class="px-6 py-5 border-b border-outline-variant/50">
+      <h2 class="font-headline-md text-headline-md text-on-surface">Edit Project Details</h2>
+    </div>
+    <form (submit)="onEditSubmit()" class="p-6 space-y-4">
+      <div>
+        <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Project Name</label>
+        <input [(ngModel)]="editingProjectModel.name" name="name" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" required>
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Description</label>
+        <textarea [(ngModel)]="editingProjectModel.description" name="description" rows="3" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="Enter project description..."></textarea>
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Budget ($)</label>
+        <input [(ngModel)]="editingProjectModel.budget" name="budget" type="number" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" required>
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Assign Client</label>
+        <select [(ngModel)]="editingProjectModel.client" name="client" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+          <option value="">No Client (Unassigned)</option>
+          @for (c of clients; track c.id || c._id) {
+            <option [value]="c.id || c._id">{{ c.name }} ({{ c.email }})</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Assign Lead Developer</label>
+        <select [(ngModel)]="editingProjectModel.devs" name="devs" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+           <option value="">No Developer (Unassigned)</option>
+           @for (d of devs; track d.id || d._id) {
+             <option [value]="d.id || d._id">{{ d.name }}</option>
+           }
+        </select>
+      </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" (click)="showEditModal = false" class="px-4 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors rounded-xl">Cancel</button>
+        <button type="submit" class="px-6 py-2.5 bg-primary text-on-primary rounded-xl hover:bg-on-primary-fixed-variant transition-colors font-semibold text-sm">Save Changes</button>
       </div>
     </form>
   </div>

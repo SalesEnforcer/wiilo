@@ -18,6 +18,7 @@ export class ProjectsComponent implements OnInit {
   authService = inject(AuthService);
 
   showModal = false;
+  showEditModal = false;
   expandedProjectId: string | null = null; // Track currently expanded card ID
 
   clients: any[] = [];
@@ -29,6 +30,15 @@ export class ProjectsComponent implements OnInit {
     client: '',
     devs: [] as any,
     description: 'New Project'
+  };
+
+  editingProjectModel = {
+    id: '',
+    name: '',
+    budget: 0,
+    client: '',
+    devs: [] as any,
+    description: ''
   };
 
   ngOnInit() {
@@ -46,7 +56,6 @@ export class ProjectsComponent implements OnInit {
   }
 
   onSubmit() {
-    // Robust frontend packaging of payload to guarantee correct types to PostgreSQL
     const payload: any = {
       name: this.newProject.name,
       description: this.newProject.description || 'New Project',
@@ -55,12 +64,10 @@ export class ProjectsComponent implements OnInit {
       devs: []
     };
 
-    // Sanitize client UUID
     if (this.newProject.client && this.newProject.client !== 'undefined' && this.newProject.client.trim() !== '') {
       payload.client = this.newProject.client;
     }
 
-    // Force devs to always be a clean array of strings
     if (this.newProject.devs) {
       if (Array.isArray(this.newProject.devs)) {
         payload.devs = this.newProject.devs.filter(id => id && id !== 'undefined' && id.trim() !== '');
@@ -79,6 +86,72 @@ export class ProjectsComponent implements OnInit {
         alert('Failed to create project: ' + (err.error?.error || err.message));
       }
     });
+  }
+
+  startEdit(project: any, event: Event) {
+    event.stopPropagation();
+    
+    // Bind current details to editing form model
+    this.editingProjectModel = {
+      id: project.id || project._id,
+      name: project.name,
+      budget: project.budget,
+      description: project.description || '',
+      client: project.client?.id || project.client?._id || project.client || '',
+      devs: (project.devs || []).map((d: any) => d.id || d._id || d)
+    };
+    
+    this.showEditModal = true;
+  }
+
+  onEditSubmit() {
+    const payload: any = {
+      name: this.editingProjectModel.name,
+      description: this.editingProjectModel.description,
+      budget: Number(this.editingProjectModel.budget),
+      client: null,
+      devs: []
+    };
+
+    if (this.editingProjectModel.client && this.editingProjectModel.client !== 'undefined' && this.editingProjectModel.client.trim() !== '') {
+      payload.client = this.editingProjectModel.client;
+    }
+
+    if (this.editingProjectModel.devs) {
+      if (Array.isArray(this.editingProjectModel.devs)) {
+        payload.devs = this.editingProjectModel.devs.filter(id => id && id !== 'undefined' && id.trim() !== '');
+      } else if (typeof this.editingProjectModel.devs === 'string' && this.editingProjectModel.devs !== 'undefined' && this.editingProjectModel.devs.trim() !== '') {
+        payload.devs = [this.editingProjectModel.devs];
+      }
+    }
+
+    this.projectService.updateProject(this.editingProjectModel.id, payload).subscribe({
+      next: () => {
+        this.showEditModal = false;
+      },
+      error: (err) => {
+        console.error('Project edit failed:', err);
+        alert('Failed to update project');
+      }
+    });
+  }
+
+  confirmDelete(project: any, event: Event) {
+    event.stopPropagation();
+    const projectId = project.id || project._id;
+    if (confirm(`Are you sure you want to delete the project "${project.name}"? This action is permanent.`)) {
+      this.projectService.deleteProject(projectId).subscribe({
+        next: () => {
+          if (this.expandedProjectId === projectId) {
+            this.expandedProjectId = null;
+          }
+        },
+        error: (err) => {
+          console.error('Delete failed:', err);
+          alert('Failed to delete project.');
+        }
+      });
+    }
   }
 
   toggleExpand(projectId: string, event: Event) {

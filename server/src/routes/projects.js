@@ -1,5 +1,5 @@
 ﻿const express = require('express');
-const { getProjects, createProject, updateProject } = require('../controllers/projects');
+const { getProjects, createProject, updateProject, deleteProject } = require('../controllers/projects');
 const { protect } = require('../middleware/auth');
 
 const taskRouter = require('./tasks');
@@ -19,6 +19,7 @@ router.route('/')
   .post(createProject);
 
 router.route('/:id')
-  .put(updateProject);
+  .put(updateProject)
+  .delete(deleteProject);
 
 module.exports = router;

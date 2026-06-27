@@ -61,4 +61,18 @@ export class ProjectService {
       })
     );
   }
+
+  // Delete Project
+  deleteProject(id: string) {
+    return this.http.delete<any>(`${this.apiUrl}/${id}`, this.getHeaders()).pipe(
+      tap((res: any) => {
+        if (res.success) {
+          // Filter out the deleted project from our reactive signal array
+          this.projects.update(values =>
+            values.filter(p => p.id !== id && p._id !== id)
+          );
+        }
+      })
+    );
+  }
 }

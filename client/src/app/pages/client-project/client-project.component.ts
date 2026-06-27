@@ -28,7 +28,6 @@ export class ClientProjectComponent implements OnInit {
   projectId = '';
   currentUserId = '';
 
-  // Task comments modal states
   showEditModal = false;
   selectedTask: any = null;
   newTaskComment = '';
@@ -64,7 +63,6 @@ export class ClientProjectComponent implements OnInit {
     const userStr = localStorage.getItem('user');
     if (userStr) this.currentUserId = JSON.parse(userStr).id;
 
-    // CHECK FOR DEEP LINK
     this.route.queryParams.subscribe(params => {
       if (params['tab'] === 'chat') {
         this.activeTab = 'chat';
@@ -97,9 +95,7 @@ export class ClientProjectComponent implements OnInit {
   addComment() {
     if (!this.newTaskComment.trim()) return;
     this.kanbanService.addComment(this.selectedTask.id || this.selectedTask._id, this.newTaskComment).subscribe(res => {
-       // Update modal view
        this.selectedTask = res.data;
-       // Update list signals
        this.kanbanService.tasks.update(tasks => 
          tasks.map(t => (t.id === res.data.id || t._id === res.data._id) ? res.data : t)
        );
@@ -111,5 +107,31 @@ export class ClientProjectComponent implements OnInit {
   sendMessage() {
     if (!this.newMessage.trim()) return;
     this.chatService.sendMessage(this.projectId, this.newMessage).subscribe(() => this.newMessage = '');
+  }
+
+  // Generates highly styled, distinctive text colors/bgs based on sender ID
+  getUserTheme(senderId: string) {
+    if (this.isMe(senderId)) {
+      return 'bg-primary text-on-primary'; // Your own messages stay primary blue
+    }
+
+    const index = Math.abs(this.hashCode(senderId || '')) % 6;
+    const schemes = [
+      'bg-blue-50 text-blue-800 border border-blue-200/50',
+      'bg-green-50 text-green-800 border border-green-200/50',
+      'bg-purple-50 text-purple-800 border border-purple-200/50',
+      'bg-orange-50 text-orange-800 border border-orange-200/50',
+      'bg-pink-50 text-pink-800 border border-pink-200/50',
+      'bg-teal-50 text-teal-800 border border-teal-200/50'
+    ];
+    return schemes[index];
+  }
+
+  private hashCode(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return hash;
   }
 }

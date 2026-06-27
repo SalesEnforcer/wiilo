@@ -1,6 +1,6 @@
 ﻿<div class="h-full flex flex-col">
   <!-- Header (Always Preserved) -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 pb-4 border-b border-outline-variant/50">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 pb-4 border-b border-outline-variant/50 select-none">
     <div>
       <h2 class="font-headline-md text-headline-md text-on-surface">{{ project()?.name || 'Project' }}</h2>
       <p class="text-sm text-on-surface-variant mt-0.5">Project overview and updates</p>
@@ -57,8 +57,8 @@
   @if (activeTab === 'board') {
     <div class="flex gap-4 h-full overflow-x-auto pb-4">
       @for (col of columns; track col.id) {
-        <div class="w-72 flex-shrink-0 flex flex-col bg-surface-container rounded-2xl p-4 border border-outline-variant/50">
-          <h3 class="font-semibold text-on-surface-variant mb-3 flex justify-between uppercase text-[10px] tracking-wider select-none">{{ col.title }} <span class="bg-surface-container-lowest text-on-surface-variant px-2 py-0.5 rounded-full text-[10px] font-bold">{{ getTasksByStatus(col.id).length }}</span></h3>
+        <div class="w-72 flex-shrink-0 flex flex-col bg-surface-container rounded-2xl p-4 border border-outline-variant/50 select-none">
+          <h3 class="font-semibold text-on-surface-variant mb-3 flex justify-between uppercase text-[10px] tracking-wider">{{ col.title }} <span class="bg-surface-container-lowest text-on-surface-variant px-2 py-0.5 rounded-full text-[10px] font-bold">{{ getTasksByStatus(col.id).length }}</span></h3>
           <div class="flex-1 flex flex-col gap-2.5 min-h-[100px]">
             @for (task of getTasksByStatus(col.id); track task.id || task._id) {
               <!-- Direct click to open modal details comment panel -->
@@ -98,15 +98,23 @@
     </div>
   }
 
-  <!-- CHAT TAB -->
+  <!-- CHAT TAB (Colored Bubbles with dynamic background themes) -->
   @if (activeTab === 'chat') {
-    <div class="flex-1 flex flex-col bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden">
+    <div class="flex-1 flex flex-col bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden animate-fade-in">
       <div class="flex-1 overflow-y-auto p-5 space-y-4 bg-surface-container/50">
         @for (msg of messages(); track msg.id || msg._id) {
-          <div class="flex gap-3" [class.flex-row-reverse]="isMe(msg.sender?.id || msg.sender?._id || msg.sender)">
-            <div class="h-8 w-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0" [class.bg-primary]="!isMe(msg.sender?.id || msg.sender?._id || msg.sender)" [class.text-on-primary]="!isMe(msg.sender?.id || msg.sender?._id || msg.sender)" [class.bg-surface-container-high]="isMe(msg.sender?.id || msg.sender?._id || msg.sender)" [class.text-on-surface]="isMe(msg.sender?.id || msg.sender?._id || msg.sender)">{{ (msg.sender?.name || 'U').charAt(0).toUpperCase() }}</div>
+          <div class="flex gap-3 animate-fade-in" [class.flex-row-reverse]="isMe(msg.sender?.id || msg.sender?._id || msg.sender)">
+            <div class="h-8 w-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0 select-none bg-surface-container-high text-on-surface border border-outline-variant/30">{{ (msg.sender?.name || 'U').charAt(0).toUpperCase() }}</div>
             <div class="max-w-[70%]">
-              <div class="px-4 py-2 rounded-2xl text-sm" [class.bg-surface-container-lowest]="!isMe(msg.sender?.id || msg.sender?._id || msg.sender)" [class.text-on-surface]="!isMe(msg.sender?.id || msg.sender?._id || msg.sender)" [class.bg-primary]="isMe(msg.sender?.id || msg.sender?._id || msg.sender)" [class.text-on-primary]="isMe(msg.sender?.id || msg.sender?._id || msg.sender)">{{ msg.content }}</div>
+              
+              <!-- Sleek Sender Name & Timestamp label -->
+              <div class="text-[10px] text-on-surface-variant/80 font-bold mb-1 px-1 flex items-center gap-1.5" [class.justify-end]="isMe(msg.sender?.id || msg.sender?._id || msg.sender)">
+                <span>{{ msg.sender?.name || 'User' }}</span>
+                <span class="text-[9px] text-outline font-normal">{{ msg.createdAt | date:'shortTime' }}</span>
+              </div>
+
+              <!-- Dynamic Bubble Themes (Applies unique colored themes based on User ID) -->
+              <div class="px-4 py-2 rounded-2xl text-sm" [ngClass]="getUserTheme(msg.sender?.id || msg.sender?._id || msg.sender)">{{ msg.content }}</div>
             </div>
           </div>
         }
@@ -114,7 +122,7 @@
       <div class="p-4 bg-surface-container-lowest border-t border-outline-variant/50">
         <form (submit)="sendMessage()" class="flex gap-2">
           <input [(ngModel)]="newMessage" name="message" class="flex-1 border border-outline-variant rounded-xl px-4 py-2.5 text-sm focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none bg-surface-container-lowest text-on-surface placeholder:text-outline" placeholder="Type a message...">
-          <button type="submit" class="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-on-primary-fixed-variant transition-colors">Send</button>
+          <button type="submit" class="bg-primary text-on-primary px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-on-primary-fixed-variant transition-colors focus:outline-none">Send</button>
         </form>
       </div>
     </div>
@@ -123,7 +131,7 @@
   <!-- RESOURCES TAB -->
   @if (activeTab === 'resources') {
     <div class="flex-1 overflow-y-auto">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 animate-fade-in">
         @for (res of resources(); track res.id || res._id) {
           <a [href]="res.url" target="_blank" class="p-4 rounded-2xl border border-outline-variant hover:border-primary/40 hover:shadow-sm transition bg-surface-container-lowest flex items-center gap-3 group">
             <div class="h-10 w-10 rounded-xl bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:text-primary shrink-0">
@@ -135,7 +143,7 @@
             </div>
           </a>
         } @empty {
-          <div class="col-span-full bg-surface-container-lowest rounded-2xl border border-outline-variant border-dashed p-12 text-center text-on-surface-variant text-sm">
+          <div class="col-span-full bg-surface-container-lowest rounded-2xl border border-outline-variant border-dashed p-12 text-center text-on-surface-variant text-sm animate-fade-in">
             No files shared yet.
           </div>
         }
@@ -145,7 +153,7 @@
 
   <!-- INVOICES TAB -->
   @if (activeTab === 'invoices') {
-    <div class="flex-1 overflow-y-auto space-y-4">
+    <div class="flex-1 overflow-y-auto space-y-4 animate-fade-in">
       <!-- Paid Summary -->
       <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-5 flex items-center justify-between">
         <div>
@@ -183,14 +191,14 @@
   <div class="bg-surface-container-lowest rounded-2xl w-full max-w-2xl shadow-xl border border-outline-variant flex flex-col max-h-[90vh] overflow-hidden">
 
     <!-- Header -->
-    <div class="p-5 border-b border-outline-variant/50 flex justify-between items-start bg-surface-container/50">
+    <div class="p-5 border-b border-outline-variant/50 flex justify-between items-start bg-surface-container/50 select-none">
       <div class="flex-1 mr-4">
-        <input [(ngModel)]="selectedTask.title" readonly class="w-full bg-transparent font-headline-md text-headline-md text-on-surface border-none focus:ring-0 p-0 outline-none select-none">
+        <input [(ngModel)]="selectedTask.title" readonly class="w-full bg-transparent font-headline-md text-headline-md text-on-surface border-none focus:ring-0 p-0 outline-none">
         <div class="flex items-center gap-2 mt-2">
           <span class="text-[10px] font-medium bg-primary-container/10 text-primary px-2 py-0.5 rounded-lg">{{ selectedTask.milestone || 'Backlog' }}</span>
-          <div class="flex items-center gap-2 select-none">
+          <div class="flex items-center gap-2">
              <div class="w-4 h-4 rounded border flex items-center justify-center transition-colors" [class.bg-red-500]="selectedTask.isBlocked" [class.border-red-500]="selectedTask.isBlocked" [class.border-outline-variant]="!selectedTask.isBlocked">
-               <svg *ngIf="selectedTask.isBlocked" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+               <svg *ngIf="selectedTask.isBlocked" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
              </div>
              <span class="text-xs font-semibold" [class.text-red-600]="selectedTask.isBlocked" [class.text-on-surface-variant]="!selectedTask.isBlocked">Blocked</span>
           </div>
@@ -202,14 +210,14 @@
     <!-- Body -->
     <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
 
-      <!-- Left: Notes (Hidden from Client) -->
-      <div class="flex-1 p-5 overflow-y-auto border-r border-outline-variant/30">
+      <!-- Left: Notes -->
+      <div class="flex-1 p-5 overflow-y-auto border-r border-outline-variant/30 select-none">
         <div class="p-4 bg-surface-container rounded-xl text-sm text-on-surface-variant">Internal details are hidden from client view.</div>
       </div>
 
-      <!-- Right: Client Comments Column -->
+      <!-- Right: Comments -->
       <div class="w-full md:w-80 bg-surface-container/30 flex flex-col overflow-hidden">
-        <div class="p-4 border-b border-outline-variant/30 font-semibold text-[10px] text-on-surface-variant uppercase tracking-wider">Comments</div>
+        <div class="p-4 border-b border-outline-variant/30 font-semibold text-[10px] text-on-surface-variant uppercase tracking-wider select-none">Comments</div>
 
         <div class="flex-1 overflow-y-auto p-4 space-y-3">
           @for (comment of selectedTask.comments; track $index) {
@@ -228,7 +236,7 @@
         <div class="p-3 border-t border-outline-variant/30 bg-surface-container-lowest">
           <div class="flex gap-2">
             <input [(ngModel)]="newTaskComment" class="flex-1 border border-outline-variant rounded-xl px-3 py-2 text-sm outline-none bg-surface-container-lowest text-on-surface focus:border-primary transition" placeholder="Reply...">
-            <button (click)="addComment()" class="bg-surface-container border border-outline-variant hover:bg-surface-container-high px-3 rounded-xl text-on-surface-variant transition-colors font-semibold text-sm">Send</button>
+            <button (click)="addComment()" class="bg-surface-container border border-outline-variant hover:bg-surface-container-high px-3 rounded-xl text-on-surface-variant transition-colors font-semibold text-sm focus:outline-none">Send</button>
           </div>
         </div>
       </div>

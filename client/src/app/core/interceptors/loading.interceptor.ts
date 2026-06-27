@@ -1,15 +1,26 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+﻿import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { LoadingService } from '../services/loading.service';
 import { finalize } from 'rxjs/operators';
 
 export const loadingInterceptor: HttpInterceptorFn = (req, next) => {
   const loadingService = inject(LoadingService);
-  
-  // Don't show loader for background chats if we wanted, but for now show all
-  loadingService.show();
+
+  // Automatically bypass full-screen loader for real-time background actions
+  const isBackgroundRequest = req.url.includes('/messages') || 
+                              req.url.includes('/chat/recent') || 
+                              req.url.includes('/comments') ||
+                              req.headers.has('X-Skip-Loading');
+
+  if (!isBackgroundRequest) {
+    loadingService.show();
+  }
 
   return next(req).pipe(
-    finalize(() => loadingService.hide())
+    finalize(() => {
+      if (!isBackgroundRequest) {
+        loadingService.hide();
+      }
+    })
   );
 };

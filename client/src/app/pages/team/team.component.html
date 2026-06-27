@@ -1,4 +1,4 @@
-<div class="space-y-6">
+﻿<div class="space-y-6">
   <!-- Header -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
     <div>
@@ -11,25 +11,65 @@
     </button>
   </div>
 
+  <!-- Tab Navigation -->
+  <div class="flex border-b border-outline-variant/30 mb-6">
+    <button (click)="switchTab('active')"
+            class="px-5 py-3 text-sm font-semibold border-b-2 transition-all focus:outline-none"
+            [class.border-primary]="selectedTab === 'active'" [class.text-primary]="selectedTab === 'active'"
+            [class.border-transparent]="selectedTab !== 'active'" [class.text-on-surface-variant]="selectedTab !== 'active'" [class.hover:text-on-surface]="selectedTab !== 'active'">
+      Active Roster
+    </button>
+    <button (click)="switchTab('archived')"
+            class="px-5 py-3 text-sm font-semibold border-b-2 transition-all focus:outline-none"
+            [class.border-primary]="selectedTab === 'archived'" [class.text-primary]="selectedTab === 'archived'"
+            [class.border-transparent]="selectedTab !== 'archived'" [class.text-on-surface-variant]="selectedTab !== 'archived'" [class.hover:text-on-surface]="selectedTab !== 'archived'">
+      Archived Members
+    </button>
+  </div>
+
   <!-- Team Grid -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-    @for (user of teamService.members(); track user._id) {
-      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-5 hover:shadow-sm transition-shadow flex items-center gap-4">
-        <div class="h-11 w-11 rounded-xl bg-surface-container flex items-center justify-center text-on-surface-variant font-bold text-sm border border-outline-variant/50 shrink-0">
-          {{ user.name.charAt(0).toUpperCase() }}
-        </div>
-        <div class="flex-1 min-w-0">
-          <div class="font-semibold text-on-surface text-sm truncate">{{ user.name }}</div>
-          <div class="text-xs text-on-surface-variant truncate mt-0.5">{{ user.email }}</div>
-          <div class="mt-2">
-            <span class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider"
-              [class.bg-purple-50]="user.role === 'superadmin'" [class.text-purple-700]="user.role === 'superadmin'"
-              [class.bg-blue-50]="user.role === 'dev'" [class.text-blue-700]="user.role === 'dev'"
-              [class.bg-green-50]="user.role === 'client'" [class.text-green-700]="user.role === 'client'">
-              {{ user.role }}
-            </span>
+    @for (member of teamService.members(); track member.id || member._id) {
+      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant p-5 hover:shadow-sm transition-all flex flex-col justify-between gap-4">
+        
+        <div class="flex items-center gap-4">
+          <div class="h-10 w-10 rounded-xl bg-primary-container/20 text-primary flex items-center justify-center text-sm font-bold uppercase select-none">
+            {{ (member.name || 'U').charAt(0).toUpperCase() }}
+          </div>
+          <div class="min-w-0">
+            <h4 class="font-bold text-on-surface text-sm truncate">{{ member.name }}</h4>
+            <p class="text-xs text-on-surface-variant truncate mt-0.5">{{ member.email }}</p>
           </div>
         </div>
+
+        <div class="pt-3.5 border-t border-outline-variant/30 flex justify-between items-center">
+          <span class="inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider select-none"
+            [class.bg-purple-50]="member.role === 'superadmin'" [class.text-purple-700]="member.role === 'superadmin'"
+            [class.bg-blue-50]="member.role === 'dev'" [class.text-blue-700]="member.role === 'dev'"
+            [class.bg-green-50]="member.role === 'client'" [class.text-green-700]="member.role === 'client'">
+            {{ member.role }}
+          </span>
+
+          <div class="flex gap-1.5">
+            <button (click)="startEdit(member)" class="px-2.5 py-1.5 text-xs font-semibold text-primary hover:bg-primary-container/15 rounded-lg transition-colors focus:outline-none">
+              Edit
+            </button>
+            
+            @if (member.is_active !== false) {
+              <button (click)="archiveMember(member)" class="px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors focus:outline-none">
+                Archive
+              </button>
+            } @else {
+              <button (click)="unarchiveMember(member)" class="px-2.5 py-1.5 text-xs font-semibold text-green-600 hover:bg-green-50 rounded-lg transition-colors focus:outline-none">
+                Restore
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    } @empty {
+      <div class="col-span-full bg-surface-container-lowest rounded-2xl border border-outline-variant border-dashed p-12 text-center text-on-surface-variant text-sm">
+        No team members found under this view.
       </div>
     }
   </div>
@@ -67,13 +107,46 @@
 
       <div class="flex justify-end gap-2 pt-2">
         <button type="button" (click)="showModal = false" class="px-4 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors rounded-xl">Cancel</button>
-        <button type="submit" [disabled]="isLoading()" class="px-5 py-2.5 bg-primary text-on-primary rounded-xl hover:bg-on-primary-fixed-variant transition-colors font-semibold text-sm disabled:opacity-60 inline-flex items-center gap-2">
+        <button type="submit" [disabled]="isLoading()" class="px-5 py-2.5 bg-primary text-on-primary rounded-xl hover:bg-on-primary-fixed-variant transition-colors font-semibold text-sm disabled:opacity-60 inline-flex items-center gap-2 focus:outline-none">
           @if (isLoading()) {
             <svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             Inviting...
           } @else {
             Send Invite
           }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+}
+
+<!-- Edit Member Modal -->
+@if (showEditModal) {
+<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+  <div class="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-xl border border-outline-variant overflow-hidden">
+    <div class="px-5 py-4 border-b border-outline-variant/50">
+      <h2 class="font-headline-md text-headline-md text-on-surface">Edit Team Member</h2>
+    </div>
+
+    <form (submit)="onEditSubmit()" class="p-5 space-y-4">
+      <div>
+        <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Full Name</label>
+        <input [(ngModel)]="editingMemberModel.name" name="name" class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" required>
+      </div>
+      <div>
+        <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Role</label>
+        <select [(ngModel)]="editingMemberModel.role" name="role" class="w-full bg-surface-container-lowest border border-outline-variant rounded-xl px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" required>
+          <option value="dev">Developer</option>
+          <option value="client">Client</option>
+          <option value="superadmin">Admin</option>
+        </select>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" (click)="showEditModal = false" class="px-4 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors rounded-xl">Cancel</button>
+        <button type="submit" class="px-5 py-2.5 bg-primary text-on-primary rounded-xl hover:bg-on-primary-fixed-variant transition-colors font-semibold text-sm focus:outline-none">
+          Save Changes
         </button>
       </div>
     </form>

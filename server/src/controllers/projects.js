@@ -59,6 +59,15 @@ exports.getProjects = async (req, res) => {
       query = query.contains('devs', [req.user.id]);
     }
 
+    // ARCHIVING FILTER:
+    // If explicit status query is passed, filter by it.
+    // Otherwise, default to excluding archived projects.
+    if (req.query.status) {
+      query = query.eq('status', req.query.status);
+    } else {
+      query = query.neq('status', 'archived');
+    }
+
     const { data: projects, error } = await query;
     if (error) throw error;
 
@@ -230,7 +239,6 @@ exports.deleteProject = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid project ID' });
     }
 
-    // Cascade deletion of dependent rows is handled by Supabase Postgres foreign key references with CASCADE.
     const { error } = await supabaseAdmin
       .from('projects')
       .delete()

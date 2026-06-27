@@ -1,4 +1,4 @@
-<div class="h-full flex flex-col">
+﻿<div class="h-full flex flex-col">
   <!-- Header & Controls -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 pb-4 border-b border-outline-variant/50">
     <div class="flex items-center gap-3 flex-wrap">
@@ -12,8 +12,10 @@
         <button (click)="activeTab = 'resources'" [class.bg-surface-container-lowest]="activeTab === 'resources'" [class.shadow-sm]="activeTab === 'resources'" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-on-surface-variant">Resources</button>
       </div>
     </div>
-    <button *ngIf="activeTab === 'board' || activeTab === 'list'" (click)="showAddModal = true" class="bg-primary text-on-primary px-4 py-2 rounded-xl hover:bg-on-primary-fixed-variant transition-colors text-sm font-semibold inline-flex items-center gap-1.5">
-      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+    
+    <!-- Add Task Button (Only for Devs and Admins) -->
+    <button *ngIf="(activeTab === 'board' || activeTab === 'list') && authService.getRole() !== 'client'" (click)="showAddModal = true" class="bg-primary text-on-primary px-4 py-2 rounded-xl hover:bg-on-primary-fixed-variant transition-colors text-sm font-semibold inline-flex items-center gap-1.5">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
       Add Task
     </button>
   </div>
@@ -24,21 +26,35 @@
       <div class="w-72 flex-shrink-0 flex flex-col bg-surface-container rounded-2xl p-4 border border-outline-variant/50">
         <h3 class="font-semibold text-on-surface-variant mb-3 flex justify-between uppercase text-[10px] tracking-wider">{{ col.title }} <span class="bg-surface-container-lowest text-on-surface-variant px-2 py-0.5 rounded-full text-[10px] font-bold">{{ getTasksByStatus(col.id).length }}</span></h3>
         <div cdkDropList [cdkDropListData]="getTasksByStatus(col.id)" class="flex-1 flex flex-col gap-2.5 min-h-[100px]" (cdkDropListDropped)="drop($event, col.id)">
-          @for (task of getTasksByStatus(col.id); track task._id) {
-            <div (click)="openTask(task)" cdkDrag class="bg-surface-container-lowest p-3.5 rounded-xl border border-outline-variant cursor-pointer hover:shadow-sm hover:border-primary/30 transition group relative" [class.border-l-4]="task.isBlocked" [class.border-l-red-500]="task.isBlocked" [class.bg-red-50]="task.isBlocked">
+          @for (task of getTasksByStatus(col.id); track task.id || task._id) {
+            <!-- Disable dragging for Client roles -->
+            <div (click)="openTask(task)" cdkDrag [cdkDragDisabled]="authService.getRole() === 'client'" class="bg-surface-container-lowest p-3.5 rounded-xl border border-outline-variant cursor-pointer hover:shadow-sm hover:border-primary/30 transition group relative" [class.border-l-4]="task.isBlocked" [class.border-l-red-500]="task.isBlocked" [class.bg-red-50]="task.isBlocked">
               <div *cdkDragPlaceholder class="opacity-0"></div>
               <div class="flex justify-between items-start">
                 <div class="text-sm font-semibold text-on-surface">{{ task.title }}</div>
-                @if(task.isBlocked) { <span class="text-xs">??</span> }
+                
+                <!-- SVG warning icon instead of emoji -->
+                @if(task.isBlocked) { 
+                  <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                }
               </div>
               <div class="mt-2 flex items-center gap-2">
                  <span class="text-[10px] font-medium bg-primary-container/10 text-primary px-2 py-0.5 rounded-lg">{{ task.milestone || 'Backlog' }}</span>
               </div>
               <div class="text-[10px] text-on-surface-variant mt-2 flex justify-between items-center">
-                 <span>#{{ task._id.slice(-4) }}</span>
-                 <div class="flex gap-2">
-                   @if(task.comments?.length) { <span class="flex items-center gap-1">?? {{ task.comments.length }}</span> }
-                   @if(task.description) { <span>??</span> }
+                 <span>#{{ (task.id || task._id).slice(-4) }}</span>
+                 <div class="flex gap-4">
+                   <!-- SVG comment icon instead of emoji -->
+                   @if(task.comments?.length) { 
+                     <span class="flex items-center gap-1 text-[10px]">
+                       <svg class="w-3.5 h-3.5 text-outline shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                       {{ task.comments.length }}
+                     </span> 
+                   }
+                   <!-- SVG document icon instead of emoji -->
+                   @if(task.description) { 
+                     <svg class="w-3.5 h-3.5 text-outline shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                   }
                  </div>
               </div>
             </div>
@@ -61,17 +77,18 @@
         </tr>
       </thead>
       <tbody>
-        @for (task of kanbanService.tasks(); track task._id) {
+        @for (task of kanbanService.tasks(); track task.id || task._id) {
           <tr (click)="openTask(task)" class="hover:bg-surface-container transition-colors cursor-pointer border-b border-outline-variant/30 last:border-b-0">
             <td class="px-5 py-3">
               <span class="uppercase text-[10px] font-bold px-2 py-0.5 rounded-full" [class.bg-green-50]="task.status==='done'" [class.text-green-700]="task.status==='done'" [class.bg-surface-container]="task.status!=='done'" [class.text-on-surface-variant]="task.status!=='done'">{{ task.status }}</span>
             </td>
-            <td class="px-5 py-3 font-medium text-on-surface text-sm">
-              <span *ngIf="task.isBlocked" class="mr-1">??</span> {{ task.title }}
+            <td class="px-5 py-3 font-medium text-on-surface text-sm flex items-center gap-1.5">
+              <svg *ngIf="task.isBlocked" class="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              {{ task.title }}
             </td>
             <td class="px-5 py-3 text-sm text-on-surface-variant">{{ task.milestone || 'Backlog' }}</td>
             <td class="px-5 py-3 text-sm text-on-surface-variant">Unassigned</td>
-            <td class="px-5 py-3 text-right text-xs text-primary font-medium hover:underline">Edit</td>
+            <td class="px-5 py-3 text-right text-xs text-primary font-medium hover:underline">{{ authService.getRole() === 'client' ? 'View' : 'Edit' }}</td>
           </tr>
         }
       </tbody>
@@ -81,11 +98,11 @@
   <!-- VIEW 3: CHAT -->
   <div *ngIf="activeTab === 'chat'" class="flex-1 flex flex-col bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden">
     <div class="flex-1 overflow-y-auto p-5 space-y-4 bg-surface-container/50">
-      @for (msg of chatService.messages(); track msg._id) {
-        <div class="flex gap-3" [class.flex-row-reverse]="isMe(msg.sender._id)">
-          <div class="h-8 w-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0" [class.bg-primary]="!isMe(msg.sender._id)" [class.text-on-primary]="!isMe(msg.sender._id)" [class.bg-surface-container-high]="isMe(msg.sender._id)" [class.text-on-surface]="isMe(msg.sender._id)">{{ msg.sender.name.charAt(0).toUpperCase() }}</div>
+      @for (msg of chatService.messages(); track msg.id || msg._id) {
+        <div class="flex gap-3" [class.flex-row-reverse]="isMe(msg.sender?.id || msg.sender?._id || msg.sender)">
+          <div class="h-8 w-8 rounded-xl flex items-center justify-center text-xs font-bold shrink-0" [class.bg-primary]="!isMe(msg.sender?.id || msg.sender?._id || msg.sender)" [class.text-on-primary]="!isMe(msg.sender?.id || msg.sender?._id || msg.sender)" [class.bg-surface-container-high]="isMe(msg.sender?.id || msg.sender?._id || msg.sender)" [class.text-on-surface]="isMe(msg.sender?.id || msg.sender?._id || msg.sender)">{{ (msg.sender?.name || 'U').charAt(0).toUpperCase() }}</div>
           <div class="max-w-[70%]">
-            <div class="px-4 py-2 rounded-2xl text-sm" [class.bg-surface-container-lowest]="!isMe(msg.sender._id)" [class.text-on-surface]="!isMe(msg.sender._id)" [class.bg-primary]="isMe(msg.sender._id)" [class.text-on-primary]="isMe(msg.sender._id)">{{ msg.content }}</div>
+            <div class="px-4 py-2 rounded-2xl text-sm" [class.bg-surface-container-lowest]="!isMe(msg.sender?.id || msg.sender?._id || msg.sender)" [class.text-on-surface]="!isMe(msg.sender?.id || msg.sender?._id || msg.sender)" [class.bg-primary]="isMe(msg.sender?.id || msg.sender?._id || msg.sender)" [class.text-on-primary]="isMe(msg.sender?.id || msg.sender?._id || msg.sender)">{{ msg.content }}</div>
           </div>
         </div>
       }
@@ -102,14 +119,16 @@
   <div *ngIf="activeTab === 'resources'" class="flex-1 p-5 bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-y-auto">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
       <h3 class="font-headline-md text-headline-md text-on-surface">Project Deliverables</h3>
-      <form (submit)="addResource()" class="flex gap-2 flex-wrap">
+      
+      <!-- Only Admins & Devs can add resources -->
+      <form *ngIf="authService.getRole() !== 'client'" (submit)="addResource()" class="flex gap-2 flex-wrap">
         <input [(ngModel)]="newResource.title" name="rtitle" class="border border-outline-variant rounded-xl px-3 py-2 text-sm bg-surface-container-lowest text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none w-36" placeholder="Title" required>
         <input [(ngModel)]="newResource.url" name="rurl" class="border border-outline-variant rounded-xl px-3 py-2 text-sm bg-surface-container-lowest text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none w-48" placeholder="URL" required>
         <button type="submit" class="bg-primary text-on-primary px-4 py-2 rounded-xl text-sm font-semibold hover:bg-on-primary-fixed-variant transition-colors">Add</button>
       </form>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      @for (res of resourceService.resources(); track res._id) {
+      @for (res of resourceService.resources(); track res.id || res._id) {
         <a [href]="res.url" target="_blank" class="p-4 rounded-2xl border border-outline-variant hover:border-primary/40 hover:shadow-sm transition bg-surface-container flex items-center gap-3 group">
           <div class="h-10 w-10 rounded-xl bg-surface-container-lowest border border-outline-variant flex items-center justify-center text-on-surface-variant group-hover:text-primary shrink-0">
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
@@ -151,10 +170,15 @@
     <!-- Header -->
     <div class="p-5 border-b border-outline-variant/50 flex justify-between items-start bg-surface-container/50">
       <div class="flex-1 mr-4">
-        <input [(ngModel)]="selectedTask.title" class="w-full bg-transparent font-headline-md text-headline-md text-on-surface border-none focus:ring-0 p-0 placeholder:text-outline outline-none" placeholder="Task Title">
+        <!-- Readonly for clients -->
+        <input [(ngModel)]="selectedTask.title" [readonly]="authService.getRole() === 'client'" class="w-full bg-transparent font-headline-md text-headline-md text-on-surface border-none focus:ring-0 p-0 placeholder:text-outline outline-none">
+        
         <div class="flex items-center gap-2 mt-2">
-          <input [(ngModel)]="selectedTask.milestone" class="text-xs bg-surface-container-lowest border border-outline-variant rounded-lg px-2 py-1 text-on-surface focus:border-primary outline-none" placeholder="Milestone">
-          <div class="flex items-center gap-2 cursor-pointer" (click)="selectedTask.isBlocked = !selectedTask.isBlocked">
+          <!-- Readonly for clients -->
+          <input [(ngModel)]="selectedTask.milestone" [readonly]="authService.getRole() === 'client'" class="text-xs bg-surface-container-lowest border border-outline-variant rounded-lg px-2 py-1 text-on-surface focus:border-primary outline-none" placeholder="Milestone">
+          
+          <!-- Blocked toggle restricted for clients -->
+          <div class="flex items-center gap-2" [class.cursor-pointer]="authService.getRole() !== 'client'" (click)="authService.getRole() !== 'client' && selectedTask.isBlocked = !selectedTask.isBlocked">
              <div class="w-4 h-4 rounded border flex items-center justify-center transition-colors" [class.bg-red-500]="selectedTask.isBlocked" [class.border-red-500]="selectedTask.isBlocked" [class.border-outline-variant]="!selectedTask.isBlocked">
                <svg *ngIf="selectedTask.isBlocked" class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
              </div>
@@ -179,13 +203,14 @@
           <div class="p-4 bg-surface-container rounded-xl text-sm text-on-surface-variant">Internal details are hidden from client view.</div>
         }
 
-        <div class="flex justify-end">
+        <!-- Hide Save button for clients -->
+        <div class="flex justify-end" *ngIf="authService.getRole() !== 'client'">
            <button (click)="saveTask()" class="px-5 py-2.5 bg-primary text-on-primary rounded-xl hover:bg-on-primary-fixed-variant font-semibold text-sm transition-colors">Save Changes</button>
         </div>
       </div>
 
       <!-- Right: Comments -->
-      <div class="w-full md:w-80 bg-surface-container/30 flex flex-col">
+      <div class="w-full md:w-80 bg-surface-container/30 flex flex-col overflow-hidden">
         <div class="p-4 border-b border-outline-variant/30 font-semibold text-[10px] text-on-surface-variant uppercase tracking-wider">Comments</div>
 
         <div class="flex-1 overflow-y-auto p-4 space-y-3">
@@ -195,7 +220,7 @@
                 <span class="text-xs font-bold text-on-surface">{{ comment.user?.name || 'User' }}</span>
                 <span class="text-[10px] text-on-surface-variant">{{ comment.createdAt | date:'short' }}</span>
               </div>
-              <p class="text-sm text-on-surface-variant">{{ comment.text }}</p>
+              <p class="text-sm text-on-surface-variant leading-relaxed">{{ comment.text }}</p>
             </div>
           } @empty {
             <div class="text-center text-on-surface-variant text-xs mt-8">No comments yet.</div>

@@ -1,4 +1,4 @@
-<!-- GLOBAL LOADER -->
+﻿<!-- GLOBAL LOADER -->
 @if (loadingService.isLoading()) {
   <div class="fixed inset-0 z-[100] flex items-center justify-center bg-surface-container-lowest/60 backdrop-blur-sm transition-all duration-300">
     <div class="bg-surface-container-lowest p-3 rounded-2xl shadow-xl border border-outline-variant">
@@ -84,9 +84,14 @@
       </a>
     </nav>
 
-    <!-- Logout -->
-    <div class="border-t border-outline-variant/30 p-3">
-      <button (click)="logout()" class="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-error-container/30 hover:text-error overflow-hidden whitespace-nowrap transition-colors">
+    <!-- Sidebar Footer with Toggle Onboarding Guide & Logout -->
+    <div class="border-t border-outline-variant/30 p-3 space-y-1">
+      <button (click)="resetTour()" class="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors overflow-hidden whitespace-nowrap focus:outline-none">
+        <svg class="h-5 w-5 shrink-0 text-primary animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <span class="transition-opacity duration-200" [class.opacity-0]="isCollapsed()">Tour Guide</span>
+      </button>
+
+      <button (click)="logout()" class="group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-error-container/30 hover:text-error overflow-hidden whitespace-nowrap transition-colors focus:outline-none">
         <svg class="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
         <span class="transition-opacity duration-200" [class.opacity-0]="isCollapsed()">Log Out</span>
       </button>
@@ -124,4 +129,73 @@
     </div>
   </main>
 </div>
+
+<!-- Dynamic Speech Chat Bubble (Highly Integrated & Non-Blocking) -->
+@if (showTour() && authService.currentUser()) {
+  <div class="fixed bottom-6 right-6 z-[99] max-w-sm w-full animate-bounce-slow transition-all duration-300">
+    <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-2xl p-5 relative flex flex-col gap-3.5">
+      
+      <!-- Speech Pointer Triangle -->
+      <div class="absolute bottom-[-8px] right-8 w-4 h-4 bg-surface-container-lowest border-r border-b border-outline-variant rotate-45"></div>
+
+      <!-- Dialogue/Text Body (Formatted with styled Tailwind bold tags) -->
+      <div class="space-y-2 select-none">
+        
+        <!-- Stage 1: Welcome Intro Dialog -->
+        @if (tourStage() === 1) {
+          @if (authService.getRole() === 'client') {
+            @if (tourStep() === 1) {
+              <p class="text-sm text-on-surface leading-relaxed">Welcome, {{ authService.currentUser()?.name || 'Client' }}! I am <strong class="font-bold text-primary">wiilo</strong>, your client relations and project workspace tool.</p>
+            } @else if (tourStep() === 2) {
+              <p class="text-sm text-on-surface leading-relaxed">Through your portal, you can track project progress, chat with the dev team in real-time, and view outstanding invoices.</p>
+            } @else if (tourStep() === 3) {
+              <p class="text-sm text-on-surface leading-relaxed text-pretty">Please keep in mind wiilo is still in <strong class="font-bold text-on-surface">beta</strong>. If you notice anything that's not working right, please let us know! Thank you for trusting us with your project.</p>
+            }
+          } @else {
+            @if (tourStep() === 1) {
+              <p class="text-sm text-on-surface leading-relaxed">Welcome, {{ authService.currentUser()?.name || 'Developer' }}! This is your <strong class="font-bold text-primary">wiilo</strong> developer workstation.</p>
+            } @else if (tourStep() === 2) {
+              <p class="text-sm text-on-surface leading-relaxed">Here, you can manage project tasks, share files/deliverables, and collaborate with clients and team members in real-time.</p>
+            } @else if (tourStep() === 3) {
+              <p class="text-sm text-on-surface leading-relaxed text-pretty">Please note that wiilo is in <strong class="font-bold text-on-surface">beta</strong>. If you notice any bugs or have performance suggestions, please call them out. Thanks for building with us!</p>
+            }
+          }
+        }
+
+        <!-- Stage 2: Dashboard Navigation Walkthrough -->
+        @if (tourStage() === 2) {
+          @if (tourStep() === 1) {
+            <p class="text-sm text-on-surface leading-relaxed">This is your main <strong class="font-bold text-on-surface">Home dashboard</strong>. It shows a quick high-level summary of your active projects, finances, and recent messages.</p>
+          } @else if (tourStep() === 2) {
+            <p class="text-sm text-on-surface leading-relaxed">We have navigated to your <strong class="font-bold text-primary">Settings</strong> page. For security, please configure your profile and set up a new password here.</p>
+          } @else if (tourStep() === 3) {
+            <p class="text-sm text-on-surface leading-relaxed">This is your <strong class="font-bold text-primary">Projects</strong> list. Click on any project card here to expand its description and view details.</p>
+          }
+        }
+
+        <!-- Stage 3: Workspace Board Walkthrough -->
+        @if (tourStage() === 3) {
+          @if (tourStep() === 1) {
+            <p class="text-sm text-on-surface leading-relaxed">Under the <strong class="font-bold text-primary">Board</strong> tab, tasks are split into progress columns. Click any card to read descriptions, check blockages, and add comments.</p>
+          } @else if (tourStep() === 2) {
+            <p class="text-sm text-on-surface leading-relaxed">Use the <strong class="font-bold text-primary">Discussion</strong> tab to chat with clients and team members about this project in real-time.</p>
+          } @else if (tourStep() === 3) {
+            <p class="text-sm text-on-surface leading-relaxed">The <strong class="font-bold text-primary">Resources</strong> tab is where deliverables, Figma links, and Github wireframes are saved. Have fun collaborating!</p>
+          }
+        }
+      </div>
+
+      <!-- Controls Footer -->
+      <div class="flex justify-between items-center pt-2.5 border-t border-outline-variant/30">
+        <button (click)="skipTour()" class="text-xs text-on-surface-variant hover:text-on-surface transition-colors font-semibold focus:outline-none">Skip</button>
+        <button (click)="nextStep()" class="px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-semibold hover:bg-on-primary-fixed-variant transition-colors flex items-center gap-1 shadow-sm focus:outline-none select-none">
+          {{ (tourStage() === 3 && tourStep() === 3) ? 'Got it!' : 'Next' }}
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
+}
+
 <app-toast></app-toast>

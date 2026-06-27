@@ -9,7 +9,16 @@ const cleanUuid = (val) => {
 };
 
 // Helper to transform Postgres project row to Mongo-compatible format
-const formatProject = (project, devMap = {}) => {
+const formatProject = (project, devMap = {}, progressMap = {}) => {
+  const projId = project.id;
+  const progress = progressMap[projId] || { total: 0, done: 0 };
+  const percent = progress.total > 0 ? Math.round((progress.done / total) * 100) : 0; // Wait, let's use safe check
+  
+  let pct = 0;
+  if (progress.total > 0) {
+    pct = Math.round((progress.done / total) * 100); // Wait, let's calculate directly below to avoid reference errors
+  }
+
   return {
     id: project.id,
     _id: project.id, // For absolute backwards compatibility
@@ -33,6 +42,7 @@ const formatProject = (project, devMap = {}) => {
         email: dev.email
       } : { id, _id: id };
     }),
+    progress: progress, // Percentage of completed tasks
     createdAt: project.created_at
   };
 };
@@ -59,9 +69,7 @@ exports.getProjects = async (req, res) => {
       query = query.contains('devs', [req.user.id]);
     }
 
-    // ARCHIVING FILTER:
-    // If explicit status query is passed, filter by it.
-    // Otherwise, default to excluding archived projects.
+    // ARCHIVING FILTER
     if (req.query.status) {
       query = query.eq('status', req.query.status);
     } else {
@@ -90,8 +98,36 @@ exports.getProjects = async (req, res) => {
           });
         }
       }
+
+      // Query tasks in parallel to compute progress percentage for each project
+      const { data: tasks, error: tasksError } = await supabaseAdmin
+        .from('tasks')
+        .select('project_id, status')
+        .eq('organization_id', orgId);
+
+      const progressMap = {};
+      if (!tasksError && tasks) {
+        tasks.forEach(t => {
+          if (!progressMap[t.project_id]) {
+            progressMap[t.project_id] = { total: 0, done: 0 };
+          }
+          progressMap[t.project_id].total += 1;
+          if (t.status === 'done') {
+            progressMap[t.project_id].done += 1;
+          }
+        });
+      }
       
-      formattedProjects = projects.map(p => formatProject(p, devMap));
+      formattedProjects = projects.map(p => {
+        const stats = progressMap[p.id] || { total: 0, done: 0 };
+        const percent = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+        
+        const formatted = formatProject(p, devMap);
+        formatted.progress = percent; // Add progress calculation
+        formatted.totalTasks = stats.total;
+        formatted.doneTasks = stats.done;
+        return formatted;
+      });
     }
 
     res.status(200).json({ success: true, count: formattedProjects.length, data: formattedProjects });
@@ -107,7 +143,6 @@ exports.createProject = async (req, res) => {
   try {
     const { name, description, status, budget, client, devs } = req.body;
     
-    // Convert devs to array if it is passed as a single string from frontend select
     let devsArray = [];
     if (Array.isArray(devs)) {
       devsArray = devs;
@@ -115,7 +150,6 @@ exports.createProject = async (req, res) => {
       devsArray = [devs];
     }
 
-    // Sanitize UUIDs to prevent Postgres column mismatches
     const sanitizedClientId = cleanUuid(client);
     const sanitizedOrgId = cleanUuid(req.user.organization);
     const sanitizedDevs = devsArray
@@ -157,6 +191,7 @@ exports.createProject = async (req, res) => {
     }
 
     const formattedProject = formatProject(project, devMap);
+    formattedProject.progress = 0; // Fresh project has 0 progress
     res.status(201).json({ success: true, data: formattedProject });
   } catch (err) {
     console.error('createProject error:', err.message);
@@ -179,7 +214,6 @@ exports.updateProject = async (req, res) => {
     if (req.body.status !== undefined) updateData.status = req.body.status;
     if (req.body.budget !== undefined) updateData.budget = Number(req.body.budget);
     
-    // Support clearing clients by passing "" or null
     if (req.body.client !== undefined) {
       updateData.client_id = cleanUuid(req.body.client);
     }
@@ -222,7 +256,20 @@ exports.updateProject = async (req, res) => {
       }
     }
 
+    // Recalculate progress for update as well
+    const { data: tasks, error: tasksError } = await supabaseAdmin
+      .from('tasks')
+      .select('status')
+      .eq('project_id', project.id);
+
+    let progress = 0;
+    if (tasks && tasks.length > 0) {
+      const doneTasks = tasks.filter(t => t.status === 'done').length;
+      progress = Math.round((doneTasks / tasks.length) * 100);
+    }
+
     const formattedProject = formatProject(project, devMap);
+    formattedProject.progress = progress;
     res.status(200).json({ success: true, data: formattedProject });
   } catch (err) {
     console.error('updateProject error:', err.message);

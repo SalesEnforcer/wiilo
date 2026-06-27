@@ -9,6 +9,20 @@
   }
 </div>
 
+<!-- Tab Navigation -->
+<div class="flex border-b border-outline-variant/30 mb-6">
+  <button (click)="switchTab('active')"
+          class="px-5 py-3 text-sm font-semibold border-b-2 transition-all focus:outline-none"
+          [ngClass]="selectedTab === 'active' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'">
+    Active Projects
+  </button>
+  <button (click)="switchTab('archived')"
+          class="px-5 py-3 text-sm font-semibold border-b-2 transition-all focus:outline-none"
+          [ngClass]="selectedTab === 'archived' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'">
+    Archived Projects
+  </button>
+</div>
+
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
   @for (project of projectService.projects(); track project.id || project._id) {
     <div (click)="toggleExpand(project.id || project._id, $event)"
@@ -49,15 +63,17 @@
           </div>
 
           <div class="flex flex-wrap gap-2 pt-1 border-t border-outline-variant/10">
-            <!-- Open Board Button -->
-            <a [routerLink]="['/' + (authService.getRole() === 'client' ? 'portal' : 'projects'), (project.id || project._id)]"
-               class="px-3 py-2 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-on-primary-fixed-variant transition-colors flex items-center gap-1.5 shadow-sm">
-               <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-               Open Board
-            </a>
+            <!-- Open Board Button (Only show if project is not archived) -->
+            @if (project.status !== 'archived') {
+              <a [routerLink]="['/' + (authService.getRole() === 'client' ? 'portal' : 'projects'), (project.id || project._id)]"
+                 class="px-3 py-2 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-on-primary-fixed-variant transition-colors flex items-center gap-1.5 shadow-sm">
+                 <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                 Open Board
+              </a>
+            }
 
-            <!-- Developer Actions -->
-            @if (authService.getRole() === 'dev') {
+            <!-- Developer Actions (Only when project is active) -->
+            @if (authService.getRole() === 'dev' && project.status !== 'archived') {
               @if (isAssignedDev(project)) {
                 <button (click)="resignProject(project)"
                         class="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors">
@@ -71,8 +87,8 @@
               }
             }
 
-            <!-- Client Actions -->
-            @if (authService.getRole() === 'client') {
+            <!-- Client Actions (Only when project is active) -->
+            @if (authService.getRole() === 'client' && project.status !== 'archived') {
               @if (isAssignedClient(project)) {
                 <button (click)="resignClient(project)"
                         class="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors">
@@ -89,14 +105,28 @@
             <!-- Admin Actions -->
             @if (authService.isAdmin()) {
               <button (click)="startEdit(project, $event)"
-                      class="px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold transition-colors">
+                      class="px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold transition-colors border border-blue-200">
                 Edit Details
               </button>
+              
+              @if (project.status !== 'archived') {
+                <button (click)="archiveProject(project, $event)"
+                        class="px-3 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-lg text-xs font-semibold transition-colors border border-yellow-200">
+                  Archive Project
+                </button>
+              } @else {
+                <button (click)="unarchiveProject(project, $event)"
+                        class="px-3 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-xs font-semibold transition-colors border border-green-200">
+                  Restore Project
+                </button>
+              }
+
               <button (click)="confirmDelete(project, $event)"
-                      class="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors">
+                      class="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors border border-red-200">
                 Delete Project
               </button>
-              @if (project.client || (project.devs && project.devs.length > 0)) {
+
+              @if (project.status !== 'archived' && (project.client || (project.devs && project.devs.length > 0))) {
                 <button (click)="unassignAll(project)"
                         class="px-3 py-2 bg-surface-container-high text-on-surface hover:bg-outline-variant/30 rounded-lg text-xs font-semibold transition-colors border border-outline-variant">
                   Unassign All
@@ -109,7 +139,7 @@
     </div>
   } @empty {
     <div class="col-span-full bg-surface-container-lowest rounded-2xl border border-outline-variant border-dashed p-12 text-center text-on-surface-variant text-sm">
-      No projects yet
+      No projects found under this view.
     </div>
   }
 </div>

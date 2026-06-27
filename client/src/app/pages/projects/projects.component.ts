@@ -20,6 +20,7 @@ export class ProjectsComponent implements OnInit {
   showModal = false;
   showEditModal = false;
   expandedProjectId: string | null = null; // Track currently expanded card ID
+  selectedTab: 'active' | 'archived' = 'active'; // Current tab state
 
   clients: any[] = [];
   devs: any[] = [];
@@ -42,7 +43,7 @@ export class ProjectsComponent implements OnInit {
   };
 
   ngOnInit() {
-    this.projectService.getProjects().subscribe();
+    this.loadProjects();
 
     // Only fetch team if Admin
     if (this.authService.isAdmin()) {
@@ -53,6 +54,17 @@ export class ProjectsComponent implements OnInit {
             }
         });
     }
+  }
+
+  loadProjects() {
+    const filterStatus = this.selectedTab === 'archived' ? 'archived' : undefined;
+    this.projectService.getProjects(filterStatus).subscribe();
+  }
+
+  switchTab(tab: 'active' | 'archived') {
+    this.selectedTab = tab;
+    this.expandedProjectId = null;
+    this.loadProjects();
   }
 
   onSubmit() {
@@ -80,6 +92,11 @@ export class ProjectsComponent implements OnInit {
       next: () => {
         this.showModal = false;
         this.newProject = { name: '', budget: 0, client: '', devs: [], description: 'New Project' };
+        
+        // If we are currently on the archived tab, switch back to active to see the newly created project
+        if (this.selectedTab === 'archived') {
+          this.switchTab('active');
+        }
       },
       error: (err) => {
         console.error('Project creation failed:', err);
@@ -91,7 +108,6 @@ export class ProjectsComponent implements OnInit {
   startEdit(project: any, event: Event) {
     event.stopPropagation();
     
-    // Bind current details to editing form model
     this.editingProjectModel = {
       id: project.id || project._id,
       name: project.name,
@@ -134,6 +150,42 @@ export class ProjectsComponent implements OnInit {
         alert('Failed to update project');
       }
     });
+  }
+
+  archiveProject(project: any, event: Event) {
+    event.stopPropagation();
+    const projectId = project.id || project._id;
+    if (confirm(`Are you sure you want to archive the project "${project.name}"?`)) {
+      this.projectService.updateProject(projectId, { status: 'archived' }).subscribe({
+        next: () => {
+          // Optimistically remove from active list
+          this.projectService.projects.update(values => values.filter(p => p.id !== projectId && p._id !== projectId));
+          this.expandedProjectId = null;
+        },
+        error: (err) => {
+          console.error('Archive failed:', err);
+          alert('Failed to archive project.');
+        }
+      });
+    }
+  }
+
+  unarchiveProject(project: any, event: Event) {
+    event.stopPropagation();
+    const projectId = project.id || project._id;
+    if (confirm(`Restore project "${project.name}" back to Active status?`)) {
+      this.projectService.updateProject(projectId, { status: 'active' }).subscribe({
+        next: () => {
+          // Optimistically remove from archived list
+          this.projectService.projects.update(values => values.filter(p => p.id !== projectId && p._id !== projectId));
+          this.expandedProjectId = null;
+        },
+        error: (err) => {
+          console.error('Restore failed:', err);
+          alert('Failed to restore project.');
+        }
+      });
+    }
   }
 
   confirmDelete(project: any, event: Event) {

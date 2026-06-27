@@ -25,9 +25,13 @@ export class ProjectService {
     };
   }
 
-  // Fetch Projects
-  getProjects() {
-    return this.http.get<any>(this.apiUrl, this.getHeaders()).pipe(
+  // Fetch Projects (supports status filter like 'archived' or 'active')
+  getProjects(status?: string) {
+    let url = this.apiUrl;
+    if (status) {
+      url = `${this.apiUrl}?status=${status}`;
+    }
+    return this.http.get<any>(url, this.getHeaders()).pipe(
       tap((res: any) => {
         if (res.success) {
           this.projects.set(res.data);

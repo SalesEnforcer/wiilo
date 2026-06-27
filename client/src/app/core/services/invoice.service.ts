@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+﻿import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
@@ -33,7 +33,8 @@ export class InvoiceService {
   markAsPaid(id: string) {
     return this.http.put<any>(`${this.apiUrl}/${id}/pay`, {}, this.getHeaders()).pipe(
       tap(res => {
-        this.invoices.update(prev => prev.map(inv => inv._id === id ? res.data : inv));
+        // Safe check for both Postgres 'id' and Mongo '_id' keys
+        this.invoices.update(prev => prev.map(inv => (inv.id === id || inv._id === id) ? res.data : inv));
       })
     );
   }

@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from '@angular/core';
+﻿import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { tap } from 'rxjs/operators';
@@ -42,6 +42,11 @@ export class AuthService {
     );
   }
 
+  // Request Password Reset Link
+  forgotPassword(email: string) {
+    return this.http.post(`${this.apiUrl}/auth/forgot-password`, { email });
+  }
+
   // New: Update Profile
   updateProfile(data: any) {
     const token = this.getToken();
@@ -50,7 +55,6 @@ export class AuthService {
     }).pipe(
       tap((res: any) => {
         if (res.success) {
-          // Update local storage and signal
           const updatedUser = { ...this.currentUser(), ...res.data };
           localStorage.setItem('user', JSON.stringify(updatedUser));
           this.currentUser.set(updatedUser);

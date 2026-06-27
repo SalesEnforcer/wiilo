@@ -45,3 +45,25 @@ exports.login = async (req, res) => {
     res.status(200).json({ success: true, token: data.session.access_token, user: profile });
   } catch (err) { res.status(400).json({ success: false, error: err.message }); }
 };
+
+// @desc    Request Password Reset Email
+// @route   POST /api/auth/forgot-password
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email is required' });
+    }
+
+    const redirectToUrl = process.env.CLIENT_URL || 'http://localhost:4200/settings';
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectToUrl
+    });
+
+    if (error) throw error;
+
+    res.status(200).json({ success: true, message: 'Reset link sent to your email.' });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+};

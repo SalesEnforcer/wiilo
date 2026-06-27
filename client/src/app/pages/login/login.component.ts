@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+﻿import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -14,8 +14,11 @@ import { ToastService } from '../../core/services/toast.service';
 export class LoginComponent {
   email = '';
   password = '';
-  
-  // This is the missing signal causing the error
+
+  // Password Recovery variables
+  isResetView = signal(false); // Toggle in-place form transition
+  resetEmail = '';
+
   isLoading = signal(false);
 
   authService = inject(AuthService);
@@ -24,7 +27,7 @@ export class LoginComponent {
 
   onSubmit() {
     if (this.isLoading()) return;
-    
+
     this.isLoading.set(true);
     const credentials = { email: this.email, password: this.password };
 
@@ -36,7 +39,27 @@ export class LoginComponent {
       },
       error: (err) => {
         console.error('Login Failed:', err);
-        this.toastService.show(err.error?.error || 'Invalid credentials', 'error');
+        // Clean, user-friendly error notice instead of generic details
+        this.toastService.show('Incorrect email or password. Please try again.', 'error');
+        this.isLoading.set(false);
+      }
+    });
+  }
+
+  onForgotPasswordSubmit() {
+    if (this.isLoading() || !this.resetEmail.trim()) return;
+
+    this.isLoading.set(true);
+    this.authService.forgotPassword(this.resetEmail).subscribe({
+      next: (res) => {
+        this.toastService.show('Password reset link sent! Check your email.', 'success');
+        this.isResetView.set(false); // Return to login form
+        this.resetEmail = '';
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Password reset failed:', err);
+        this.toastService.show(err.error?.error || 'Failed to send recovery link.', 'error');
         this.isLoading.set(false);
       }
     });

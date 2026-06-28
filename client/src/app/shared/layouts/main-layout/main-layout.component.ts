@@ -1,9 +1,13 @@
 ﻿import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { ProjectService } from '../../../core/services/project.service';
 import { LoadingService } from '../../../core/services/loading.service';
+import { TeamService } from '../../../core/services/team.service';
+import { SearchService } from '../../../core/services/search.service';
+import { FeedbackService } from '../../../core/services/feedback.service'; // Import FeedbackService
 import { ToastService } from '../../../core/services/toast.service';
 import { ToastComponent } from '../../components/toast/toast.component';
 import { filter } from 'rxjs/operators';
@@ -11,13 +15,12 @@ import { filter } from 'rxjs/operators';
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterModule, ToastComponent],
+  imports: [CommonModule, RouterModule, FormsModule, ToastComponent],
   templateUrl: './main-layout.component.html',
   styles: [`
     @keyframes progress { 0% { width: 0%; } 50% { width: 50%; } 100% { width: 100%; } }
     .animate-progress { animation: progress 2s infinite ease-in-out; }
     
-    /* Slow, fluid bouncing animation for our minimalist speech bubble */
     @keyframes bounceSlow {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-5px); }
@@ -29,6 +32,9 @@ export class MainLayoutComponent implements OnInit {
   authService = inject(AuthService);
   projectService = inject(ProjectService);
   loadingService = inject(LoadingService);
+  teamService = inject(TeamService);
+  searchService = inject(SearchService);
+  feedbackService = inject(FeedbackService); // Inject FeedbackService
   toastService = inject(ToastService);
   router = inject(Router);
 
@@ -38,16 +44,29 @@ export class MainLayoutComponent implements OnInit {
   // Client Projects List
   clientProjects = signal<any[]>([]);
 
+  // Search state
+  searchQuery = '';
+  searchResults = signal<any[]>([]); // Dropdown results
+
+  // Feedback states
+  showFeedbackModal = false;
+  feedbackText = '';
+  isSubmittingFeedback = false;
+
   // Onboarding Tour Signals
   showTour = signal(false);
   tourStage = signal<number>(1); // Stage 1, 2, or 3
   tourStep = signal<number>(1);  // Step 1, 2, or 3 within the stage
 
   ngOnInit() {
-    if (this.authService.getRole() === 'client') {
-      this.projectService.getProjects().subscribe(res => {
-        if(res.data) this.clientProjects.set(res.data);
-      });
+    this.projectService.getProjects().subscribe(res => {
+      if (res.data && this.authService.getRole() === 'client') {
+        this.clientProjects.set(res.data);
+      }
+    });
+
+    if (this.authService.getRole() !== 'client') {
+      this.teamService.getTeam().subscribe();
     }
 
     const tourCompleted = localStorage.getItem('wiilo_tour_completed');
@@ -80,6 +99,82 @@ export class MainLayoutComponent implements OnInit {
     });
   }
 
+  onSearchChange() {
+    this.searchService.query.set(this.searchQuery);
+
+    const q = this.searchQuery.toLowerCase().trim();
+    if (!q) {
+      this.searchResults.set([]);
+      return;
+    }
+
+    const matches: any[] = [];
+
+    // Search Projects
+    const projs = this.projectService.projects();
+    projs.forEach(p => {
+      if (p.name?.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q)) {
+        matches.push({
+          id: p.id || p._id,
+          name: p.name,
+          type: 'Project',
+          path: '/' + (this.authService.getRole() === 'client' ? 'portal' : 'projects') + '/' + (p.id || p._id)
+        });
+      }
+    });
+
+    // Search Team Members (Admins and Devs only)
+    if (this.authService.getRole() !== 'client') {
+      const members = this.teamService.members();
+      members.forEach(m => {
+        if (m.name?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q) || m.role?.toLowerCase().includes(q)) {
+          matches.push({
+            id: m.id || m._id,
+            name: m.name,
+            subText: m.role.toUpperCase() + ' • ' + m.email,
+            type: 'Team Member',
+            path: '/team'
+          });
+        }
+      });
+    }
+
+    this.searchResults.set(matches.slice(0, 5));
+  }
+
+  selectResult(result: any) {
+    this.router.navigate([result.path]);
+    this.searchQuery = '';
+    this.searchResults.set([]);
+    this.searchService.query.set('');
+  }
+
+  onSearchBlur() {
+    setTimeout(() => {
+      this.searchResults.set([]);
+    }, 200);
+  }
+
+  // Handle Feedback Submission
+  onFeedbackSubmit() {
+    if (!this.feedbackText.trim() || this.isSubmittingFeedback) return;
+
+    this.isSubmittingFeedback = true;
+    this.feedbackService.submitFeedback(this.feedbackText).subscribe({
+      next: () => {
+        this.toastService.show('Thank you! Your suggestion has been recorded successfully.', 'success');
+        this.feedbackText = '';
+        this.showFeedbackModal = false;
+        this.isSubmittingFeedback = false;
+      },
+      error: (err) => {
+        console.error('Feedback submit failed:', err);
+        this.toastService.show('Failed to submit suggestion. Please try again.', 'error');
+        this.isSubmittingFeedback = false;
+      }
+    });
+  }
+
   nextStep() {
     const currentStep = this.tourStep();
     const currentStage = this.tourStage();
@@ -107,7 +202,6 @@ export class MainLayoutComponent implements OnInit {
         this.showTour.set(false);
         this.tourStage.set(3);
         this.tourStep.set(1);
-        
         this.toastService.show('Home walkthrough complete! Open any Project Board to start the final workspace tour.', 'success');
       }
     } else if (currentStage === 3) {

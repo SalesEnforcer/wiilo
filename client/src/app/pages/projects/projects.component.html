@@ -24,7 +24,7 @@
 </div>
 
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-  @for (project of projectService.projects(); track project.id || project._id) {
+  @for (project of filteredProjects(); track project.id || project._id) {
     <div (click)="toggleExpand(project.id || project._id, $event)"
          class="bg-surface-container-lowest rounded-2xl border p-5 hover:shadow-sm transition cursor-pointer group relative overflow-hidden flex flex-col justify-between"
          [ngClass]="expandedProjectId === (project.id || project._id) ? 'border-primary ring-1 ring-primary/20' : 'border-outline-variant hover:border-primary/30'">
@@ -237,3 +237,4 @@
   </div>
 </div>
 }
+

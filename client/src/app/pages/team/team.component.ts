@@ -1,8 +1,9 @@
-﻿import { Component, inject, OnInit, signal } from '@angular/core';
+﻿import { Component, inject, OnInit, signal, computed } from '@angular/core'; // Imported computed
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TeamService } from '../../core/services/team.service';
 import { ToastService } from '../../core/services/toast.service';
+import { SearchService } from '../../core/services/search.service'; // Import SearchService
 
 @Component({
   selector: 'app-team',
@@ -13,6 +14,7 @@ import { ToastService } from '../../core/services/toast.service';
 export class TeamComponent implements OnInit {
   teamService = inject(TeamService);
   toastService = inject(ToastService);
+  searchService = inject(SearchService); // Inject SearchService
 
   showModal = false;
   showEditModal = false;
@@ -27,6 +29,20 @@ export class TeamComponent implements OnInit {
     name: '',
     role: 'dev'
   };
+
+  // REACTIVE DYNAMIC ROSTER SEARCH FILTER
+  filteredMembers = computed(() => {
+    const q = this.searchService.query().toLowerCase().trim();
+    const members = this.teamService.members();
+    if (!q) return members;
+    
+    // Filters instantly through names, emails, or roles
+    return members.filter(m =>
+      m.name?.toLowerCase().includes(q) ||
+      m.email?.toLowerCase().includes(q) ||
+      m.role?.toLowerCase().includes(q)
+    );
+  });
 
   ngOnInit() {
     this.loadTeam();
@@ -53,8 +69,6 @@ export class TeamComponent implements OnInit {
         this.showModal = false;
         this.newUser = { name: '', email: '', password: '', role: 'dev' };
         this.toastService.show('Member invited successfully', 'success');
-        
-        // If we are currently on the archived tab, switch back to active to see the new member
         if (this.selectedTab === 'archived') {
           this.switchTab('active');
         }
@@ -98,7 +112,6 @@ export class TeamComponent implements OnInit {
     if (confirm(`Are you sure you want to archive and deactivate ${member.name}? This will instantly ban them from logging in.`)) {
       this.teamService.updateMember(id, { isActive: false }).subscribe({
         next: () => {
-          // Optimistically filter the deactivated member out of active view
           this.teamService.members.update(prev => prev.filter(m => m.id !== id && m._id !== id));
           this.toastService.show('Member archived & banned successfully', 'success');
         },
@@ -114,7 +127,6 @@ export class TeamComponent implements OnInit {
     if (confirm(`Restore ${member.name} to active team roster? This will reactivate their login access.`)) {
       this.teamService.updateMember(id, { isActive: true }).subscribe({
         next: () => {
-          // Optimistically filter the restored member out of archived view
           this.teamService.members.update(prev => prev.filter(m => m.id !== id && m._id !== id));
           this.toastService.show('Member restored & unbanned successfully', 'success');
         },

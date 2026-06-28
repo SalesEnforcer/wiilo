@@ -1,10 +1,11 @@
-﻿import { Component, inject, OnInit } from '@angular/core';
+﻿import { Component, inject, OnInit, computed } from '@angular/core'; // Imported computed
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ProjectService } from '../../core/services/project.service';
 import { TeamService } from '../../core/services/team.service';
 import { AuthService } from '../../core/services/auth.service';
+import { SearchService } from '../../core/services/search.service'; // Import SearchService
 
 @Component({
   selector: 'app-projects',
@@ -16,6 +17,7 @@ export class ProjectsComponent implements OnInit {
   projectService = inject(ProjectService);
   teamService = inject(TeamService);
   authService = inject(AuthService);
+  searchService = inject(SearchService); // Inject SearchService
 
   showModal = false;
   showEditModal = false;
@@ -41,6 +43,19 @@ export class ProjectsComponent implements OnInit {
     devs: [] as any,
     description: ''
   };
+
+  // REACTIVE DYNAMIC SEARCH FILTER
+  filteredProjects = computed(() => {
+    const q = this.searchService.query().toLowerCase().trim();
+    const projs = this.projectService.projects();
+    if (!q) return projs;
+    
+    // Filters instantly through project names and descriptions
+    return projs.filter(p =>
+      p.name?.toLowerCase().includes(q) ||
+      p.description?.toLowerCase().includes(q)
+    );
+  });
 
   ngOnInit() {
     this.loadProjects();
@@ -92,8 +107,6 @@ export class ProjectsComponent implements OnInit {
       next: () => {
         this.showModal = false;
         this.newProject = { name: '', budget: 0, client: '', devs: [], description: 'New Project' };
-        
-        // If we are currently on the archived tab, switch back to active to see the newly created project
         if (this.selectedTab === 'archived') {
           this.switchTab('active');
         }
@@ -158,7 +171,6 @@ export class ProjectsComponent implements OnInit {
     if (confirm(`Are you sure you want to archive the project "${project.name}"?`)) {
       this.projectService.updateProject(projectId, { status: 'archived' }).subscribe({
         next: () => {
-          // Optimistically remove from active list
           this.projectService.projects.update(values => values.filter(p => p.id !== projectId && p._id !== projectId));
           this.expandedProjectId = null;
         },
@@ -176,7 +188,6 @@ export class ProjectsComponent implements OnInit {
     if (confirm(`Restore project "${project.name}" back to Active status?`)) {
       this.projectService.updateProject(projectId, { status: 'active' }).subscribe({
         next: () => {
-          // Optimistically remove from archived list
           this.projectService.projects.update(values => values.filter(p => p.id !== projectId && p._id !== projectId));
           this.expandedProjectId = null;
         },

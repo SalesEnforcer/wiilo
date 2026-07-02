@@ -1,4 +1,5 @@
 ﻿const { supabaseAdmin } = require('../config/supabase');
+const { sendWelcomeEmail } = require('../utils/mailer'); // Import the SMTP mailer
 
 // @desc    Get Team members (supports query parameter status=archived)
 // @route   GET /api/users
@@ -8,7 +9,6 @@ exports.getTeam = async (req, res) => {
       .select('id, name, email, role, is_active, created_at')
       .eq('organization_id', req.user.organization);
 
-    // If query ?status=archived is passed, load archived; else load active
     if (req.query.status === 'archived') {
       query = query.eq('is_active', false);
     } else {
@@ -23,7 +23,7 @@ exports.getTeam = async (req, res) => {
   }
 };
 
-// @desc    Add member & create Supabase auth
+// @desc    Add member & create Supabase auth & dispatch welcome email credentials
 // @route   POST /api/users
 exports.addMember = async (req, res) => {
   try {
@@ -36,6 +36,12 @@ exports.addMember = async (req, res) => {
 
     const { data: profile, error: profileError } = await supabaseAdmin.from('users').select('*').eq('id', authData.user.id).single();
     if (profileError) throw profileError;
+
+    // Trigger SMTP Welcome email in the background asynchronously
+    sendWelcomeEmail({ name, email, password, role }).catch(err => 
+      console.error('[TRIGGER ERROR] Failed to run sendWelcomeEmail in background:', err.message)
+    );
+
     res.status(201).json({ success: true, data: profile });
   } catch (err) { 
     res.status(400).json({ success: false, error: err.message }); 
@@ -57,7 +63,6 @@ exports.updateMember = async (req, res) => {
     if (req.body.role !== undefined) fieldsToUpdate.role = req.body.role;
     if (req.body.isActive !== undefined) fieldsToUpdate.is_active = req.body.isActive;
 
-    // 1. Sync name or role with Supabase Auth metadata
     if (req.body.name || req.body.role) {
       const updateMeta = {};
       if (req.body.name) updateMeta.name = req.body.name;
@@ -68,14 +73,13 @@ exports.updateMember = async (req, res) => {
       });
     }
 
-    // 2. Lockout deactivation: ban/unban user in Supabase Auth
     if (req.body.isActive === false) {
       await supabaseAdmin.auth.admin.updateUserById(memberId, {
-        ban_duration: '87660h' // Ban account for 10 years
+        ban_duration: '87660h'
       });
     } else if (req.body.isActive === true) {
       await supabaseAdmin.auth.admin.updateUserById(memberId, {
-        ban_duration: 'none' // Remove ban
+        ban_duration: 'none'
       });
     }
 

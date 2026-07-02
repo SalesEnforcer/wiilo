@@ -59,6 +59,7 @@ const startKeepAlive = () => {
     const client = publicUrl.startsWith('https') ? https : http;
 
     client.get(pingUrl, (res) => {
+      res.resume();
       console.log(`Keep-Alive Ping Success: Status ${res.statusCode} received from ${pingUrl}`);
     }).on('error', (err) => {
       console.error(`Keep-Alive Ping Failed: ${err.message}`);
@@ -67,3 +68,4 @@ const startKeepAlive = () => {
 };
 
 startKeepAlive();
+

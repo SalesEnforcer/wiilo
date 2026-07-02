@@ -34,6 +34,9 @@ export class KanbanComponent implements OnInit {
   selectedTask: any = null;
   newTaskComment = '';
 
+  // Subtask local states
+  newSubtaskTitle = '';
+
   // Chat/Resource
   newMessage = '';
   newResource = { title: '', url: '', type: 'link' };
@@ -94,6 +97,45 @@ export class KanbanComponent implements OnInit {
         this.kanbanService.tasks.update(tasks => tasks.map(t => (t.id === res.data.id || t._id === res.data._id) ? res.data : t));
         this.showEditModal = false;
     });
+  }
+
+  // Save task subtasks/changes inline silently in the background
+  saveTaskInline() {
+    if (!this.selectedTask) return;
+    const id = this.selectedTask.id || this.selectedTask._id;
+    this.kanbanService.updateTask(id, { subtasks: this.selectedTask.subtasks }).subscribe(res => {
+       this.kanbanService.tasks.update(tasks => 
+         tasks.map(t => (t.id === res.data.id || t._id === res.data._id) ? res.data : t)
+       );
+    });
+  }
+
+  // Subtask Management Methods
+  addSubtask() {
+    if (!this.newSubtaskTitle.trim() || !this.selectedTask) return;
+    
+    const subtasks = this.selectedTask.subtasks || [];
+    subtasks.push({
+      id: Date.now().toString(),
+      title: this.newSubtaskTitle.trim(),
+      isDone: false
+    });
+    
+    this.selectedTask.subtasks = subtasks;
+    this.saveTaskInline();
+    this.newSubtaskTitle = '';
+  }
+
+  toggleSubtask(subtask: any) {
+    if (!this.selectedTask) return;
+    subtask.isDone = !subtask.isDone;
+    this.saveTaskInline();
+  }
+
+  deleteSubtask(subtaskId: string) {
+    if (!this.selectedTask) return;
+    this.selectedTask.subtasks = (this.selectedTask.subtasks || []).filter((s: any) => s.id !== subtaskId);
+    this.saveTaskInline();
   }
 
   addComment() {

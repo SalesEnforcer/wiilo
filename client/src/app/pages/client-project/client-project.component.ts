@@ -28,9 +28,11 @@ export class ClientProjectComponent implements OnInit {
   projectId = '';
   currentUserId = '';
 
+  // Task comments & subtasks modal states
   showEditModal = false;
   selectedTask: any = null;
   newTaskComment = '';
+  newSubtaskTitle = ''; // Local subtask title string
 
   project = signal<any>(null);
   tasks = this.kanbanService.tasks;
@@ -63,6 +65,7 @@ export class ClientProjectComponent implements OnInit {
     const userStr = localStorage.getItem('user');
     if (userStr) this.currentUserId = JSON.parse(userStr).id;
 
+    // CHECK FOR DEEP LINK
     this.route.queryParams.subscribe(params => {
       if (params['tab'] === 'chat') {
         this.activeTab = 'chat';
@@ -92,6 +95,51 @@ export class ClientProjectComponent implements OnInit {
     this.showEditModal = true;
   }
 
+  saveTask() {
+    this.kanbanService.updateTask(this.selectedTask.id || this.selectedTask._id, this.selectedTask).subscribe(res => {
+        this.kanbanService.tasks.update(tasks => tasks.map(t => (t.id === res.data.id || t._id === res.data._id) ? res.data : t));
+        this.showEditModal = false;
+    });
+  }
+
+  saveTaskInline() {
+    if (!this.selectedTask) return;
+    const id = this.selectedTask.id || this.selectedTask._id;
+    this.kanbanService.updateTask(id, { subtasks: this.selectedTask.subtasks }).subscribe(res => {
+       this.kanbanService.tasks.update(tasks => 
+         tasks.map(t => (t.id === res.data.id || t._id === res.data._id) ? res.data : t)
+       );
+    });
+  }
+
+  // Subtask Management Methods
+  addSubtask() {
+    if (!this.newSubtaskTitle.trim() || !this.selectedTask) return;
+    
+    const subtasks = this.selectedTask.subtasks || [];
+    subtasks.push({
+      id: Date.now().toString(),
+      title: this.newSubtaskTitle.trim(),
+      isDone: false
+    });
+    
+    this.selectedTask.subtasks = subtasks;
+    this.saveTaskInline();
+    this.newSubtaskTitle = '';
+  }
+
+  toggleSubtask(subtask: any) {
+    if (!this.selectedTask) return;
+    subtask.isDone = !subtask.isDone;
+    this.saveTaskInline();
+  }
+
+  deleteSubtask(subtaskId: string) {
+    if (!this.selectedTask) return;
+    this.selectedTask.subtasks = (this.selectedTask.subtasks || []).filter((s: any) => s.id !== subtaskId);
+    this.saveTaskInline();
+  }
+
   addComment() {
     if (!this.newTaskComment.trim()) return;
     this.kanbanService.addComment(this.selectedTask.id || this.selectedTask._id, this.newTaskComment).subscribe(res => {
@@ -109,10 +157,9 @@ export class ClientProjectComponent implements OnInit {
     this.chatService.sendMessage(this.projectId, this.newMessage).subscribe(() => this.newMessage = '');
   }
 
-  // Generates highly styled, distinctive text colors/bgs based on sender ID
   getUserTheme(senderId: string) {
     if (this.isMe(senderId)) {
-      return 'bg-primary text-on-primary'; // Your own messages stay primary blue
+      return 'bg-primary text-on-primary';
     }
 
     const index = Math.abs(this.hashCode(senderId || '')) % 6;

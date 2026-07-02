@@ -1,9 +1,10 @@
 ﻿const { supabaseAdmin } = require('../config/supabase');
+const { createNotification } = require('../utils/notifications');
 
 // Helper to hydrate comments with user details and map schema keys
 const hydrateTasksComments = async (tasks) => {
   if (!tasks || tasks.length === 0) return [];
-  
+
   // 1. Collect unique user IDs from all comments
   const userIds = new Set();
   tasks.forEach(task => {
@@ -57,6 +58,7 @@ const hydrateTasksComments = async (tasks) => {
       project: task.project_id,
       organization: task.organization_id,
       comments: hydratedComments,
+      subtasks: task.subtasks || [], // Hydrate subtasks array
       createdAt: task.created_at
     };
   });
@@ -87,7 +89,7 @@ exports.getTasks = async (req, res) => {
 exports.createTask = async (req, res) => {
   try {
     const { title, description, status, isBlocked, milestone, dueDate } = req.body;
-    
+
     const insertData = {
       title,
       description,
@@ -97,7 +99,8 @@ exports.createTask = async (req, res) => {
       due_date: dueDate || null,
       project_id: req.params.projectId,
       organization_id: req.user.organization,
-      comments: [] // default empty jsonb array
+      comments: [], // default empty jsonb array
+      subtasks: [] // default empty subtasks jsonb array
     };
 
     const { data: task, error } = await supabaseAdmin
@@ -107,6 +110,14 @@ exports.createTask = async (req, res) => {
       .single();
 
     if (error) throw error;
+
+    if (task) { 
+      await createNotification({ 
+        organizationId: task.organization_id, 
+        title: 'Task Created', 
+        message: `${req.user.name} created task "${task.title}"` 
+      }); 
+    }
 
     const hydratedList = await hydrateTasksComments([task]);
     res.status(201).json({ success: true, data: hydratedList[0] });
@@ -128,6 +139,7 @@ exports.updateTask = async (req, res) => {
     if (req.body.milestone !== undefined) updateData.milestone = req.body.milestone;
     if (req.body.dueDate !== undefined) updateData.due_date = req.body.dueDate;
     if (req.body.comments !== undefined) updateData.comments = req.body.comments;
+    if (req.body.subtasks !== undefined) updateData.subtasks = req.body.subtasks; // Update subtasks array
 
     const { data: task, error } = await supabaseAdmin
       .from('tasks')
@@ -150,7 +162,6 @@ exports.updateTask = async (req, res) => {
 // @route   POST /api/tasks/:id/comments
 exports.addComment = async (req, res) => {
   try {
-    // 1. Fetch current task to retrieve existing comments list
     const { data: task, error: fetchError } = await supabaseAdmin
       .from('tasks')
       .select('*')
@@ -166,10 +177,8 @@ exports.addComment = async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
-    // Add new comment to the top
     existingComments.unshift(newComment);
 
-    // 2. Save back to jsonb column
     const { data: updatedTask, error: updateError } = await supabaseAdmin
       .from('tasks')
       .update({ comments: existingComments })
@@ -178,6 +187,14 @@ exports.addComment = async (req, res) => {
       .single();
 
     if (updateError) throw updateError;
+
+    if (updatedTask) { 
+      await createNotification({ 
+        organizationId: updatedTask.organization_id, 
+        title: 'Comment Added', 
+        message: `${req.user.name} commented on task "${updatedTask.title}"` 
+      }); 
+    }
 
     const hydratedList = await hydrateTasksComments([updatedTask]);
     res.status(200).json({ success: true, data: hydratedList[0] });

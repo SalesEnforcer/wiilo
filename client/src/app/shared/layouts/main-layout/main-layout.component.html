@@ -23,13 +23,10 @@
     <!-- Logo -->
     <div class="h-16 flex items-center px-5 min-w-max border-b border-outline-variant/30">
       <div class="flex items-center gap-3">
-        <svg class="h-7 w-7 shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="40" height="40" rx="10" fill="#004ac6"/>
-          <path d="M11 14h5l2 12H13l-2-12z" fill="white" opacity="0.5"/>
-          <path d="M16 14h5l-3 12h-5l3-12z" fill="white" opacity="0.75"/>
-          <path d="M21 14h5l-4 12h-5l4-12z" fill="white"/>
-          <path d="M26 14h3l-5 12h-3l5-12z" fill="white" opacity="0.6"/>
-          <circle cx="28.5" cy="11.5" r="2" fill="#F59E0B"/>
+        <svg class="h-8 w-8 shrink-0" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="10" fill="#004ac6"/>
+          <path d="M6 10 C6 10, 10 22, 13 22 C16 22, 17 14, 19 14 C21 14, 22 22, 25 22 C28 22, 28 10, 28 10" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+          <circle cx="25" cy="10" r="2.5" fill="#f59e0b" />
         </svg>
         <div class="transition-opacity duration-200" [class.opacity-0]="isCollapsed()" [class.hidden]="isCollapsed()">
           <h1 class="text-lg font-bold text-on-surface tracking-tight">wiilo</h1>
@@ -245,3 +242,4 @@
 }
 
 <app-toast></app-toast>
+

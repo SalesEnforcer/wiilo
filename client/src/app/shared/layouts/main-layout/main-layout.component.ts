@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal, OnInit } from '@angular/core';
+﻿import { Component, inject, signal, OnInit, HostListener } from '@angular/core'; // Imported HostListener
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -7,7 +7,7 @@ import { ProjectService } from '../../../core/services/project.service';
 import { LoadingService } from '../../../core/services/loading.service';
 import { TeamService } from '../../../core/services/team.service';
 import { SearchService } from '../../../core/services/search.service';
-import { FeedbackService } from '../../../core/services/feedback.service'; // Import FeedbackService
+import { FeedbackService } from '../../../core/services/feedback.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { ToastComponent } from '../../components/toast/toast.component';
 import { filter } from 'rxjs/operators';
@@ -34,7 +34,7 @@ export class MainLayoutComponent implements OnInit {
   loadingService = inject(LoadingService);
   teamService = inject(TeamService);
   searchService = inject(SearchService);
-  feedbackService = inject(FeedbackService); // Inject FeedbackService
+  feedbackService = inject(FeedbackService);
   toastService = inject(ToastService);
   router = inject(Router);
 
@@ -46,7 +46,7 @@ export class MainLayoutComponent implements OnInit {
 
   // Search state
   searchQuery = '';
-  searchResults = signal<any[]>([]); // Dropdown results
+  searchResults = signal<any[]>([]);
 
   // Feedback states
   showFeedbackModal = false;
@@ -55,8 +55,12 @@ export class MainLayoutComponent implements OnInit {
 
   // Onboarding Tour Signals
   showTour = signal(false);
-  tourStage = signal<number>(1); // Stage 1, 2, or 3
-  tourStep = signal<number>(1);  // Step 1, 2, or 3 within the stage
+  tourStage = signal<number>(1);
+  tourStep = signal<number>(1);
+
+  // PWA Install Prompt state
+  deferredPrompt: any = null;
+  showInstallButton = signal(false);
 
   ngOnInit() {
     this.projectService.getProjects().subscribe(res => {
@@ -96,6 +100,36 @@ export class MainLayoutComponent implements OnInit {
           localStorage.setItem('wiilo_tour_step', '1');
         }
       }
+    });
+  }
+
+  // Native Browser PWA Install Listener
+  @HostListener('window:beforeinstallprompt', ['$event'])
+  onBeforeInstallPrompt(e: any) {
+    // Prevent Chrome 67 and earlier from automatically showing the default bar
+    e.preventDefault();
+    // Stash the event so we can trigger it on button click
+    this.deferredPrompt = e;
+    // Show our custom sidebar button!
+    this.showInstallButton.set(true);
+  }
+
+  installApp() {
+    if (!this.deferredPrompt) return;
+    
+    // Trigger the native installation prompt
+    this.deferredPrompt.prompt();
+    
+    // Wait for the user to accept/decline
+    this.deferredPrompt.userChoice.then((choiceResult: any) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the wiilo install prompt');
+        this.toastService.show('wiilo is installing...', 'success');
+      } else {
+        console.log('User dismissed the wiilo install prompt');
+      }
+      this.deferredPrompt = null;
+      this.showInstallButton.set(false);
     });
   }
 
@@ -235,7 +269,7 @@ export class MainLayoutComponent implements OnInit {
   }
 
   toggleSidebar() { this.isCollapsed.update(v => !v); }
-  toggleMobileSidebar() { this.isSidebarOpen.update(v => !v); }
+  toggleMobileSidebar() { this.isSidebarOpen.set(false); }
   closeMobileSidebar() { this.isSidebarOpen.set(false); }
   logout() { this.authService.logout(); }
 }

@@ -1,1 +1,36 @@
-<router-outlet></router-outlet>
+﻿@if (isMobile) {
+  <div class="min-h-screen bg-surface-container-lowest flex flex-col items-center justify-center p-6 text-center select-none animate-fade-in">
+    <div class="bg-surface-container-lowest rounded-3xl border border-outline-variant p-8 max-w-sm shadow-2xl flex flex-col items-center gap-6">
+      
+      <!-- New Custom Geometric Logo Icon -->
+      <svg class="h-14 w-14 text-primary animate-pulse" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="10" fill="#004ac6"/>
+        <path d="M6 10 C6 10, 10 22, 13 22 C16 22, 17 14, 19 14 C21 14, 22 22, 25 22 C28 22, 28 10, 28 10" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="25" cy="10" r="2.5" fill="#f59e0b" />
+      </svg>
+
+      <!-- Premium Desktop Vector Graphic -->
+      <div class="text-primary bg-primary/10 p-5 rounded-2xl border border-primary/10">
+        <svg class="w-12 h-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+      </div>
+
+      <!-- Dialogue/Notification Copy -->
+      <div class="space-y-2.5">
+        <h2 class="text-xl font-bold text-on-surface tracking-tight">Desktop View Required</h2>
+        <p class="text-sm text-on-surface-variant leading-relaxed text-pretty">
+          The mobile experience for <strong class="font-bold text-primary">wiilo</strong> is currently under construction. Please log in on a desktop browser to access your agency dashboard, boards, and invoices!
+        </p>
+      </div>
+
+      <!-- Footer Branding -->
+      <div class="border-t border-outline-variant/30 pt-4.5 w-full text-[10px] text-outline uppercase tracking-wider font-bold">
+        wiilo workspace OS &copy; 2026
+      </div>
+    </div>
+  </div>
+} @else {
+  <!-- Render Desktop application normally -->
+  <router-outlet></router-outlet>
+}

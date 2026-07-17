@@ -9,15 +9,26 @@ const cleanUuid = (val) => {
 };
 
 // Helper to transform Postgres project row to Mongo-compatible format
-const formatProject = (project, devMap = {}, progressMap = {}) => {
-  const projId = project.id;
-  const progress = progressMap[projId] || { total: 0, done: 0 };
-  const percent = progress.total > 0 ? Math.round((progress.done / total) * 100) : 0; // Wait, let's use safe check
-  
-  let pct = 0;
-  if (progress.total > 0) {
-    pct = Math.round((progress.done / total) * 100); // Wait, let's calculate directly below to avoid reference errors
-  }
+const formatProject = (project, userMap = {}) => {
+  const clientsArray = (project.clients || []).map(id => {
+    const client = userMap[id];
+    return client ? {
+      id: client.id,
+      _id: client.id,
+      name: client.name,
+      email: client.email
+    } : { id, _id: id };
+  });
+
+  const devsArray = (project.devs || []).map(id => {
+    const dev = userMap[id];
+    return dev ? {
+      id: dev.id,
+      _id: dev.id,
+      name: dev.name,
+      email: dev.email
+    } : { id, _id: id };
+  });
 
   return {
     id: project.id,
@@ -27,22 +38,16 @@ const formatProject = (project, devMap = {}, progressMap = {}) => {
     status: project.status,
     budget: Number(project.budget),
     organization: project.organization_id,
-    client: project.client ? {
-      id: project.client.id,
-      _id: project.client.id,
-      name: project.client.name,
-      email: project.client.email
-    } : null,
-    devs: (project.devs || []).map(id => {
-      const dev = devMap[id];
-      return dev ? {
-        id: dev.id,
-        _id: dev.id,
-        name: dev.name,
-        email: dev.email
-      } : { id, _id: id };
-    }),
-    progress: progress, // Percentage of completed tasks
+    
+    // 1. Support multiple clients (array of objects)
+    clients: clientsArray,
+    
+    // 2. Absolute backward compatibility: map single client to the first client in the array
+    client: clientsArray.length > 0 ? clientsArray[0] : null,
+    
+    // 3. Support multiple developers
+    devs: devsArray,
+    progress: 0, // Placeholder to be calculated on projects list load
     createdAt: project.created_at
   };
 };
@@ -58,14 +63,15 @@ exports.getProjects = async (req, res) => {
 
     let query = supabaseAdmin
       .from('projects')
-      .select('*, client:client_id(id, name, email)')
+      .select('*')
       .eq('organization_id', orgId);
 
     // SECURITY CHECK:
-    // If not Admin, restrict query to assigned projects only
+    // If Client, filter by checking if clients array contains their user ID
     if (req.user.role === 'client') {
-      query = query.eq('client_id', req.user.id);
+      query = query.contains('clients', [req.user.id]);
     } else if (req.user.role === 'dev') {
+      // If Dev, filter by checking if devs array contains their user ID
       query = query.contains('devs', [req.user.id]);
     }
 
@@ -81,20 +87,26 @@ exports.getProjects = async (req, res) => {
 
     let formattedProjects = [];
     if (projects && projects.length > 0) {
-      const devIds = [...new Set(projects.flatMap(p => p.devs || []))].filter(id => cleanUuid(id) !== null);
-      const devMap = {};
-      
-      if (devIds.length > 0) {
-        const { data: devUsers, error: devsError } = await supabaseAdmin
+      // Extract all unique user IDs from both devs and clients arrays
+      const userIds = [
+        ...new Set([
+          ...projects.flatMap(p => p.devs || []),
+          ...projects.flatMap(p => p.clients || [])
+        ])
+      ].filter(id => cleanUuid(id) !== null);
+
+      const userMap = {};
+      if (userIds.length > 0) {
+        const { data: dbUsers, error: usersError } = await supabaseAdmin
           .from('users')
           .select('id, name, email')
-          .in('id', devIds);
-        
-        if (devsError) throw devsError;
-        
-        if (devUsers) {
-          devUsers.forEach(u => {
-            devMap[u.id] = u;
+          .in('id', userIds);
+
+        if (usersError) throw usersError;
+
+        if (dbUsers) {
+          dbUsers.forEach(u => {
+            userMap[u.id] = u;
           });
         }
       }
@@ -117,12 +129,12 @@ exports.getProjects = async (req, res) => {
           }
         });
       }
-      
+
       formattedProjects = projects.map(p => {
         const stats = progressMap[p.id] || { total: 0, done: 0 };
         const percent = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
-        
-        const formatted = formatProject(p, devMap);
+
+        const formatted = formatProject(p, userMap);
         formatted.progress = percent; // Add progress calculation
         formatted.totalTasks = stats.total;
         formatted.doneTasks = stats.done;
@@ -141,8 +153,17 @@ exports.getProjects = async (req, res) => {
 // @route   POST /api/projects
 exports.createProject = async (req, res) => {
   try {
-    const { name, description, status, budget, client, devs } = req.body;
-    
+    const { name, description, status, budget, clients, devs } = req.body;
+
+    // Sanitize clients input (supports array or single string)
+    let clientsArray = [];
+    if (Array.isArray(clients)) {
+      clientsArray = clients;
+    } else if (typeof clients === 'string' && clients.trim() !== '' && clients !== 'undefined') {
+      clientsArray = [clients];
+    }
+
+    // Sanitize devs input (supports array or single string)
     let devsArray = [];
     if (Array.isArray(devs)) {
       devsArray = devs;
@@ -150,8 +171,10 @@ exports.createProject = async (req, res) => {
       devsArray = [devs];
     }
 
-    const sanitizedClientId = cleanUuid(client);
     const sanitizedOrgId = cleanUuid(req.user.organization);
+    const sanitizedClients = clientsArray
+      .map(id => cleanUuid(id))
+      .filter(id => id !== null);
     const sanitizedDevs = devsArray
       .map(id => cleanUuid(id))
       .filter(id => id !== null);
@@ -162,35 +185,38 @@ exports.createProject = async (req, res) => {
       status: status || 'active',
       budget: budget ? Number(budget) : 0,
       organization_id: sanitizedOrgId,
-      client_id: sanitizedClientId,
+      clients: sanitizedClients,
       devs: sanitizedDevs
     };
 
     const { data: project, error } = await supabaseAdmin
       .from('projects')
       .insert(insertData)
-      .select('*, client:client_id(id, name, email)')
+      .select('*')
       .single();
 
     if (error) throw error;
 
-    const devMap = {};
-    if (project.devs && project.devs.length > 0) {
-      const { data: devUsers, error: devsError } = await supabaseAdmin
+    // Resolve details for clients and developers
+    const userIds = [...new Set([...project.clients, ...project.devs])].filter(id => cleanUuid(id) !== null);
+    const userMap = {};
+
+    if (userIds.length > 0) {
+      const { data: dbUsers, error: usersError } = await supabaseAdmin
         .from('users')
         .select('id, name, email')
-        .in('id', project.devs);
-      
-      if (devsError) throw devsError;
-      
-      if (devUsers) {
-        devUsers.forEach(u => {
-          devMap[u.id] = u;
+        .in('id', userIds);
+
+      if (usersError) throw usersError;
+
+      if (dbUsers) {
+        dbUsers.forEach(u => {
+          userMap[u.id] = u;
         });
       }
     }
 
-    const formattedProject = formatProject(project, devMap);
+    const formattedProject = formatProject(project, userMap);
     formattedProject.progress = 0; // Fresh project has 0 progress
     res.status(201).json({ success: true, data: formattedProject });
   } catch (err) {
@@ -213,11 +239,21 @@ exports.updateProject = async (req, res) => {
     if (req.body.description !== undefined) updateData.description = req.body.description;
     if (req.body.status !== undefined) updateData.status = req.body.status;
     if (req.body.budget !== undefined) updateData.budget = Number(req.body.budget);
-    
-    if (req.body.client !== undefined) {
-      updateData.client_id = cleanUuid(req.body.client);
+
+    // Support multiple clients updating
+    if (req.body.clients !== undefined) {
+      let clientsArray = [];
+      if (Array.isArray(req.body.clients)) {
+        clientsArray = req.body.clients;
+      } else if (typeof req.body.clients === 'string' && req.body.clients.trim() !== '' && req.body.clients !== 'undefined') {
+        clientsArray = [req.body.clients];
+      }
+      updateData.clients = clientsArray
+        .map(id => cleanUuid(id))
+        .filter(id => id !== null);
     }
-    
+
+    // Support multiple devs updating
     if (req.body.devs !== undefined) {
       let devsArray = [];
       if (Array.isArray(req.body.devs)) {
@@ -225,7 +261,6 @@ exports.updateProject = async (req, res) => {
       } else if (typeof req.body.devs === 'string' && req.body.devs.trim() !== '' && req.body.devs !== 'undefined') {
         devsArray = [req.body.devs];
       }
-
       updateData.devs = devsArray
         .map(id => cleanUuid(id))
         .filter(id => id !== null);
@@ -235,23 +270,26 @@ exports.updateProject = async (req, res) => {
       .from('projects')
       .update(updateData)
       .eq('id', projectId)
-      .select('*, client:client_id(id, name, email)')
+      .select('*')
       .single();
 
     if (error) throw error;
 
-    const devMap = {};
-    if (project.devs && project.devs.length > 0) {
-      const { data: devUsers, error: devsError } = await supabaseAdmin
+    // Resolve user profiles
+    const userIds = [...new Set([...(project.clients || []), ...(project.devs || [])])].filter(id => cleanUuid(id) !== null);
+    const userMap = {};
+
+    if (userIds.length > 0) {
+      const { data: dbUsers, error: usersError } = await supabaseAdmin
         .from('users')
         .select('id, name, email')
-        .in('id', project.devs);
-      
-      if (devsError) throw devsError;
-      
-      if (devUsers) {
-        devUsers.forEach(u => {
-          devMap[u.id] = u;
+        .in('id', userIds);
+
+      if (usersError) throw usersError;
+
+      if (dbUsers) {
+        dbUsers.forEach(u => {
+          userMap[u.id] = u;
         });
       }
     }
@@ -268,7 +306,7 @@ exports.updateProject = async (req, res) => {
       progress = Math.round((doneTasks / tasks.length) * 100);
     }
 
-    const formattedProject = formatProject(project, devMap);
+    const formattedProject = formatProject(project, userMap);
     formattedProject.progress = progress;
     res.status(200).json({ success: true, data: formattedProject });
   } catch (err) {

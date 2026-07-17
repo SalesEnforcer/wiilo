@@ -1,16 +1,16 @@
-﻿<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-  <h1 class="font-headline-md text-headline-md text-on-surface">Projects</h1>
+﻿<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 select-none animate-fade-in">
+  <h1 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">Projects</h1>
 
   @if (authService.isAdmin()) {
-    <button (click)="showModal = true" class="bg-primary text-on-primary px-4 py-2.5 rounded-xl hover:bg-on-primary-fixed-variant transition-colors font-semibold text-sm inline-flex items-center gap-1.5">
-      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+    <button (click)="showModal = true" class="bg-primary text-on-primary px-4 py-2.5 rounded-xl hover:bg-on-primary-fixed-variant transition-colors font-semibold text-sm inline-flex items-center gap-1.5 focus:outline-none shadow-sm">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
       New Project
     </button>
   }
 </div>
 
 <!-- Tab Navigation -->
-<div class="flex border-b border-outline-variant/30 mb-6">
+<div class="flex border-b border-outline-variant/30 mb-6 select-none">
   <button (click)="switchTab('active')"
           class="px-5 py-3 text-sm font-semibold border-b-2 transition-all focus:outline-none"
           [ngClass]="selectedTab === 'active' ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface'">
@@ -32,13 +32,20 @@
       <div>
         <div class="flex justify-between items-start mb-3">
           <h3 class="font-bold text-on-surface group-hover:text-primary transition text-sm">{{ project.name }}</h3>
-          <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-green-50 text-green-700 capitalize">{{ project.status }}</span>
+          <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-green-50 text-green-700 capitalize select-none">{{ project.status }}</span>
         </div>
 
-        <div class="flex items-center gap-2 mb-2 text-xs text-on-surface-variant">
-          <span class="font-medium text-on-surface">Client:</span> {{ project.client?.name || 'Unassigned' }}
+        <!-- Render multiple clients as blue tags -->
+        <div class="flex flex-wrap items-center gap-1 mb-2.5 text-xs text-on-surface-variant">
+          <span class="font-medium text-on-surface mr-1">Clients:</span>
+          @for (c of project.clients; track c.id || c._id) {
+            <span class="bg-primary-container/10 text-primary px-1.5 py-0.5 rounded text-[10px]">{{ c.name }}</span>
+          } @empty {
+            <span class="text-outline text-[10px]">No clients assigned</span>
+          }
         </div>
 
+        <!-- Render multiple developers as gray tags -->
         <div class="flex flex-wrap items-center gap-1 mb-3 text-xs text-on-surface-variant">
           <span class="font-medium text-on-surface mr-1">Team:</span>
           @for (dev of project.devs; track dev.id || dev._id) {
@@ -49,7 +56,7 @@
         </div>
       </div>
 
-      <div class="border-t border-outline-variant/30 pt-3 flex justify-between items-center text-sm">
+      <div class="border-t border-outline-variant/30 pt-3 flex justify-between items-center text-sm select-none">
         <span class="text-on-surface-variant text-xs">Budget</span>
         <span class="font-bold text-on-surface">${{ project.budget | number }}</span>
       </div>
@@ -58,12 +65,11 @@
       @if (expandedProjectId === (project.id || project._id)) {
         <div class="border-t border-outline-variant/30 mt-4 pt-4 space-y-3.5" (click)="$event.stopPropagation()">
           <div>
-            <span class="block text-[10px] font-semibold text-on-surface-variant mb-1 uppercase tracking-wider">Description</span>
+            <span class="block text-[10px] font-semibold text-on-surface-variant mb-1 uppercase tracking-wider select-none">Description</span>
             <p class="text-xs text-on-surface-variant leading-relaxed">{{ project.description || 'No description provided for this project.' }}</p>
           </div>
 
-          <div class="flex flex-wrap gap-2 pt-1 border-t border-outline-variant/10">
-            <!-- Open Board Button (Only show if project is not archived) -->
+          <div class="flex flex-wrap gap-2 pt-1 border-t border-outline-variant/10 select-none">
             @if (project.status !== 'archived') {
               <a [routerLink]="['/' + (authService.getRole() === 'client' ? 'portal' : 'projects'), (project.id || project._id)]"
                  class="px-3 py-2 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-on-primary-fixed-variant transition-colors flex items-center gap-1.5 shadow-sm">
@@ -72,31 +78,31 @@
               </a>
             }
 
-            <!-- Developer Actions (Only when project is active) -->
+            <!-- Developer Actions -->
             @if (authService.getRole() === 'dev' && project.status !== 'archived') {
               @if (isAssignedDev(project)) {
                 <button (click)="resignProject(project)"
-                        class="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors">
+                        class="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors focus:outline-none">
                   Resign Project
                 </button>
               } @else {
                 <button (click)="assignSelf(project)"
-                        class="px-3 py-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg text-xs font-semibold transition-colors">
+                        class="px-3 py-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg text-xs font-semibold transition-colors focus:outline-none">
                   Join Team
                 </button>
               }
             }
 
-            <!-- Client Actions (Only when project is active) -->
+            <!-- Client Actions -->
             @if (authService.getRole() === 'client' && project.status !== 'archived') {
               @if (isAssignedClient(project)) {
                 <button (click)="resignClient(project)"
-                        class="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors">
+                        class="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors focus:outline-none">
                   Resign Project
                 </button>
-              } @else if (!project.client) {
+              } @else {
                 <button (click)="claimProject(project)"
-                        class="px-3 py-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg text-xs font-semibold transition-colors">
+                        class="px-3 py-2 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg text-xs font-semibold transition-colors focus:outline-none">
                   Claim Project
                 </button>
               }
@@ -105,30 +111,30 @@
             <!-- Admin Actions -->
             @if (authService.isAdmin()) {
               <button (click)="startEdit(project, $event)"
-                      class="px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold transition-colors border border-blue-200">
+                      class="px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg text-xs font-semibold transition-colors border border-blue-200 focus:outline-none">
                 Edit Details
               </button>
               
               @if (project.status !== 'archived') {
                 <button (click)="archiveProject(project, $event)"
-                        class="px-3 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-lg text-xs font-semibold transition-colors border border-yellow-200">
+                        class="px-3 py-2 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-lg text-xs font-semibold transition-colors border border-yellow-200 focus:outline-none">
                   Archive Project
                 </button>
               } @else {
                 <button (click)="unarchiveProject(project, $event)"
-                        class="px-3 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-xs font-semibold transition-colors border border-green-200">
+                        class="px-3 py-2 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-xs font-semibold transition-colors border border-green-200 focus:outline-none">
                   Restore Project
                 </button>
               }
 
               <button (click)="confirmDelete(project, $event)"
-                      class="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors border border-red-200">
+                      class="px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-semibold transition-colors border border-red-200 focus:outline-none">
                 Delete Project
               </button>
 
-              @if (project.status !== 'archived' && (project.client || (project.devs && project.devs.length > 0))) {
+              @if (project.status !== 'archived' && ((project.clients && project.clients.length > 0) || (project.devs && project.devs.length > 0))) {
                 <button (click)="unassignAll(project)"
-                        class="px-3 py-2 bg-surface-container-high text-on-surface hover:bg-outline-variant/30 rounded-lg text-xs font-semibold transition-colors border border-outline-variant">
+                        class="px-3 py-2 bg-surface-container-high text-on-surface hover:bg-outline-variant/30 rounded-lg text-xs font-semibold transition-colors border border-outline-variant focus:outline-none">
                   Unassign All
                 </button>
               }
@@ -138,18 +144,18 @@
       }
     </div>
   } @empty {
-    <div class="col-span-full bg-surface-container-lowest rounded-2xl border border-outline-variant border-dashed p-12 text-center text-on-surface-variant text-sm">
+    <div class="col-span-full bg-surface-container-lowest rounded-2xl border border-outline-variant border-dashed p-12 text-center text-on-surface-variant text-sm select-none">
       No projects found under this view.
     </div>
   }
 </div>
 
-<!-- Create Modal -->
+<!-- Create Modal (With Touch-Friendly Clickable Chips) -->
 @if (showModal) {
-<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
   <div class="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-xl border border-outline-variant overflow-hidden">
     <div class="px-6 py-5 border-b border-outline-variant/50">
-      <h2 class="font-headline-md text-headline-md text-on-surface">Create New Project</h2>
+      <h2 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">Create New Project</h2>
     </div>
     <form (submit)="onSubmit()" class="p-6 space-y-4">
       <div>
@@ -164,39 +170,58 @@
         <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Budget ($)</label>
         <input [(ngModel)]="newProject.budget" name="budget" type="number" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" required>
       </div>
+      
+      <!-- Interactive Click-to-Assign Client Chips -->
       <div>
-        <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Assign Client</label>
-        <select [(ngModel)]="newProject.client" name="client" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
-          <option value="">No Client (Unassigned)</option>
-          @for (c of clients; track c.id || c._id) {
-            <option [value]="c.id || c._id">{{ c.name }} ({{ c.email }})</option>
+        <label class="block text-[11px] font-semibold text-on-surface-variant mb-2 uppercase tracking-wider">Assign Clients</label>
+        <div class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1.5 border border-outline-variant rounded-xl bg-surface-container/10">
+          @for (c of clients; track c.id) {
+            <button type="button" (click)="toggleClientSelection(c.id)"
+                    class="px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 focus:outline-none"
+                    [class.bg-primary]="newProject.clients.includes(c.id)" [class.text-on-primary]="newProject.clients.includes(c.id)" [class.border-primary]="newProject.clients.includes(c.id)"
+                    [class.bg-surface-container-lowest]="!newProject.clients.includes(c.id)" [class.text-on-surface-variant]="!newProject.clients.includes(c.id)" [class.border-outline-variant]="!newProject.clients.includes(c.id)">
+              <svg *ngIf="newProject.clients.includes(c.id)" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+              {{ c.name }}
+            </button>
+          } @empty {
+            <span class="text-xs text-outline italic p-1">No clients available</span>
           }
-        </select>
+        </div>
       </div>
+      
+      <!-- Interactive Click-to-Assign Developer Chips -->
       <div>
-        <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Assign Lead Developer</label>
-        <select [(ngModel)]="newProject.devs" name="devs" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
-           <option value="">No Developer (Unassigned)</option>
-           @for (d of devs; track d.id || d._id) {
-             <option [value]="d.id || d._id">{{ d.name }}</option>
-           }
-        </select>
+        <label class="block text-[11px] font-semibold text-on-surface-variant mb-2 uppercase tracking-wider">Assign Lead Developers</label>
+        <div class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1.5 border border-outline-variant rounded-xl bg-surface-container/10">
+          @for (d of devs; track d.id) {
+            <button type="button" (click)="toggleDevSelection(d.id)"
+                    class="px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 focus:outline-none"
+                    [class.bg-primary]="newProject.devs.includes(d.id)" [class.text-on-primary]="newProject.devs.includes(d.id)" [class.border-primary]="newProject.devs.includes(d.id)"
+                    [class.bg-surface-container-lowest]="!newProject.devs.includes(d.id)" [class.text-on-surface-variant]="!newProject.devs.includes(d.id)" [class.border-outline-variant]="!newProject.devs.includes(d.id)">
+              <svg *ngIf="newProject.devs.includes(d.id)" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+              {{ d.name }}
+            </button>
+          } @empty {
+            <span class="text-xs text-outline italic p-1">No developers available</span>
+          }
+        </div>
       </div>
-      <div class="flex justify-end gap-3 pt-2">
+
+      <div class="flex justify-end gap-3 pt-2 select-none">
         <button type="button" (click)="showModal = false" class="px-4 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors rounded-xl">Cancel</button>
-        <button type="submit" class="px-6 py-2.5 bg-primary text-on-primary rounded-xl hover:bg-on-primary-fixed-variant transition-colors font-semibold text-sm">Create Project</button>
+        <button type="submit" class="px-6 py-2.5 bg-primary text-on-primary rounded-xl hover:bg-on-primary-fixed-variant transition-colors font-semibold text-sm focus:outline-none">Create Project</button>
       </div>
     </form>
   </div>
 </div>
 }
 
-<!-- Edit Modal -->
+<!-- Edit Modal (With Touch-Friendly Clickable Chips) -->
 @if (showEditModal) {
-<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+<div class="fixed inset-0 bg-on-surface/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
   <div class="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-xl border border-outline-variant overflow-hidden">
     <div class="px-6 py-5 border-b border-outline-variant/50">
-      <h2 class="font-headline-md text-headline-md text-on-surface">Edit Project Details</h2>
+      <h2 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">Edit Project Details</h2>
     </div>
     <form (submit)="onEditSubmit()" class="p-6 space-y-4">
       <div>
@@ -205,36 +230,54 @@
       </div>
       <div>
         <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Description</label>
-        <textarea [(ngModel)]="editingProjectModel.description" name="description" rows="3" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="Enter project description..."></textarea>
+        <textarea [(ngModel)]="editingProjectModel.description" name="description" rows="3" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface placeholder:text-outline focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" placeholder="Enter project description..."></textarea>
       </div>
       <div>
         <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Budget ($)</label>
         <input [(ngModel)]="editingProjectModel.budget" name="budget" type="number" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" required>
       </div>
+      
+      <!-- Interactive Click-to-Assign Client Chips (Edit Mode) -->
       <div>
-        <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Assign Client</label>
-        <select [(ngModel)]="editingProjectModel.client" name="client" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
-          <option value="">No Client (Unassigned)</option>
-          @for (c of clients; track c.id || c._id) {
-            <option [value]="c.id || c._id">{{ c.name }} ({{ c.email }})</option>
+        <label class="block text-[11px] font-semibold text-on-surface-variant mb-2 uppercase tracking-wider">Assign Clients</label>
+        <div class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1.5 border border-outline-variant rounded-xl bg-surface-container/10">
+          @for (c of clients; track c.id) {
+            <button type="button" (click)="toggleEditClientSelection(c.id)"
+                    class="px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 focus:outline-none"
+                    [class.bg-primary]="editingProjectModel.clients.includes(c.id)" [class.text-on-primary]="editingProjectModel.clients.includes(c.id)" [class.border-primary]="editingProjectModel.clients.includes(c.id)"
+                    [class.bg-surface-container-lowest]="!editingProjectModel.clients.includes(c.id)" [class.text-on-surface-variant]="!editingProjectModel.clients.includes(c.id)" [class.border-outline-variant]="!editingProjectModel.clients.includes(c.id)">
+              <svg *ngIf="editingProjectModel.clients.includes(c.id)" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+              {{ c.name }}
+            </button>
+          } @empty {
+            <span class="text-xs text-outline italic p-1">No clients available</span>
           }
-        </select>
+        </div>
       </div>
+      
+      <!-- Interactive Click-to-Assign Developer Chips (Edit Mode) -->
       <div>
-        <label class="block text-[11px] font-semibold text-on-surface-variant mb-1.5 uppercase tracking-wider">Assign Lead Developer</label>
-        <select [(ngModel)]="editingProjectModel.devs" name="devs" class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3.5 py-2.5 text-sm text-on-surface focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
-           <option value="">No Developer (Unassigned)</option>
-           @for (d of devs; track d.id || d._id) {
-             <option [value]="d.id || d._id">{{ d.name }}</option>
-           }
-        </select>
+        <label class="block text-[11px] font-semibold text-on-surface-variant mb-2 uppercase tracking-wider">Assign Lead Developers</label>
+        <div class="flex flex-wrap gap-2 max-h-24 overflow-y-auto p-1.5 border border-outline-variant rounded-xl bg-surface-container/10">
+          @for (d of devs; track d.id) {
+            <button type="button" (click)="toggleEditDevSelection(d.id)"
+                    class="px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1.5 focus:outline-none"
+                    [class.bg-primary]="editingProjectModel.devs.includes(d.id)" [class.text-on-primary]="editingProjectModel.devs.includes(d.id)" [class.border-primary]="editingProjectModel.devs.includes(d.id)"
+                    [class.bg-surface-container-lowest]="!editingProjectModel.devs.includes(d.id)" [class.text-on-surface-variant]="!editingProjectModel.devs.includes(d.id)" [class.border-outline-variant]="!editingProjectModel.devs.includes(d.id)">
+              <svg *ngIf="editingProjectModel.devs.includes(d.id)" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+              {{ d.name }}
+            </button>
+          } @empty {
+            <span class="text-xs text-outline italic p-1">No developers available</span>
+          }
+        </div>
       </div>
-      <div class="flex justify-end gap-3 pt-2">
+      
+      <div class="flex justify-end gap-3 pt-2 select-none">
         <button type="button" (click)="showEditModal = false" class="px-4 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors rounded-xl">Cancel</button>
-        <button type="submit" class="px-6 py-2.5 bg-primary text-on-primary rounded-xl hover:bg-on-primary-fixed-variant transition-colors font-semibold text-sm">Save Changes</button>
+        <button type="submit" class="px-6 py-2.5 bg-primary text-on-primary rounded-xl hover:bg-on-primary-fixed-variant transition-colors font-semibold text-sm focus:outline-none">Save Changes</button>
       </div>
     </form>
   </div>
 </div>
 }
-
